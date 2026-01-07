@@ -32,7 +32,6 @@ struct TaskTabView: View {
         }
         .background(Color(uiColor: .systemGroupedBackground))
         
-        BottomTabBar()
     }
 }
 

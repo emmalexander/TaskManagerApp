@@ -8,7 +8,8 @@
 import SwiftUI
 
 struct BottomTabBar: View {
-    @ObservedObject var viewModel: TasksViewModel = TasksViewModel()
+    @ObservedObject var viewModel: TasksViewModel
+    
     var body: some View {
         HStack(spacing: 40) {
             bottomItem(system: "house.fill", index: 0)
@@ -48,5 +49,5 @@ struct BottomTabBar: View {
 }
 
 #Preview {
-    BottomTabBar()
+    BottomTabBar(viewModel: TasksViewModel())
 }
