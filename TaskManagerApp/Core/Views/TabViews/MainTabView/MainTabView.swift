@@ -16,16 +16,14 @@ struct MainTabView: View {
             case 0:
                 TaskTabView(viewModel: viewModel)
             case 1:
-                ScrollView {
-                    Text("Chart Page")
-                }
+                TaskCalendarView(viewModel: viewModel)
             case 2:
                 ScrollView {
-                    Text("Chart Page")
+                    Text("Notification Page")
                 }
             case 3:
                 ScrollView {
-                    Text("Chart Page")
+                    Text("Search Page")
                 }
             default:
                 ScrollView {

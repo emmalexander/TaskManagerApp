@@ -28,6 +28,11 @@ struct TaskTabView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 100) // space for bottom bar
             }
+            
+            // Floating Action Button
+            HStack {
+                
+            }
 
         }
         .background(Color(uiColor: .systemGroupedBackground))
@@ -40,25 +45,26 @@ private extension TaskTabView {
     var header: some View {
         HStack {
             Text("Home")
-                .font(.headline)
+                .font(.title)
                 .foregroundStyle(.secondary)
             Spacer()
-            HStack(spacing: 16) {
-                Button(action: {}) {
-                    Image(systemName: "bell")
-                        .imageScale(.medium)
-                        .foregroundStyle(.primary)
-                        .padding(10)
-                        .background(.ultraThinMaterial, in: Circle())
-                }
-                Button(action: {}) {
-                    Image(systemName: "line.3.horizontal")
-                        .imageScale(.medium)
-                        .foregroundStyle(.primary)
-                        .padding(10)
-                        .background(.ultraThinMaterial, in: Circle())
-                }
+            Button(action: {
+                // TODO: Hook up to your new task creation flow
+                // Example: viewModel.startCreatingTask()
+            }) {
+                Image(systemName: "plus")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 64, height: 64)
+                    .background(
+                        Circle()
+                            .fill(LinearGradient(colors: [Color(hex: 0x7B61FF), Color(hex: 0x5B8BFF)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    )
+                    .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 8)
             }
+            .buttonStyle(.plain)
+            //.padding(.trailing, 20)
+            .padding(.bottom, 20) // keep above the bottom bar
         }
     }
 
@@ -252,3 +258,4 @@ struct ProgressRowView: View {
             .navigationBarHidden(true)
     }
 }
+
