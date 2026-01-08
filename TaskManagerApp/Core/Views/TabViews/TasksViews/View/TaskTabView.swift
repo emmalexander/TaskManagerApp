@@ -9,6 +9,7 @@ import SwiftUI
 
 struct TaskTabView: View {
     @ObservedObject var viewModel: TasksViewModel
+    @State private var showingAddTask: Bool = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -49,8 +50,7 @@ private extension TaskTabView {
                 .foregroundStyle(.secondary)
             Spacer()
             Button(action: {
-                // TODO: Hook up to your new task creation flow
-                // Example: viewModel.startCreatingTask()
+                showingAddTask = true
             }) {
                 Image(systemName: "plus")
                     .font(.system(size: 24, weight: .bold))
@@ -63,8 +63,10 @@ private extension TaskTabView {
                     .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 8)
             }
             .buttonStyle(.plain)
-            //.padding(.trailing, 20)
-            .padding(.bottom, 20) // keep above the bottom bar
+            .padding(.bottom, 20)
+        }
+        .sheet(isPresented: $showingAddTask) {
+            NavigationStack { AddTaskView() }
         }
     }
 

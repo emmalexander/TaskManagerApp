@@ -17,7 +17,7 @@ struct AddTaskView: View {
             Color(uiColor: .systemGroupedBackground).ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 20) {
+                VStack(alignment: .leading,spacing: 20) {
                     header
 
                     VStack(alignment: .leading, spacing: 16) {
@@ -60,9 +60,10 @@ struct AddTaskView: View {
                         .padding(.horizontal, 20)
                         .padding(.bottom, 24)
                 }
-                .padding(.vertical, 16)
+                .padding(.bottom, 16)
             }
         }
+        .ignoresSafeArea()
         .navigationBarHidden(true)
     }
 
@@ -75,7 +76,7 @@ struct AddTaskView: View {
                 endPoint: .bottomTrailing
             )
             .frame(height: 180)
-            .clipShape(RoundedCorner(radius: 26, corners: [.bottomLeft, .bottomRight]))
+            //.clipShape(RoundedCorner(radius: 26, corners: [.bottomLeft, .bottomRight]))
             .overlay(
                 ZStack {
                     HStack {
@@ -90,14 +91,14 @@ struct AddTaskView: View {
 
                         Spacer()
 
-                        Button(action: {}) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 20, weight: .medium))
-                                .foregroundColor(.white)
-                                .frame(width: 36, height: 36)
-                                .background(Color.white.opacity(0.15))
-                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        }
+//                        Button(action: {}) {
+//                            Image(systemName: "magnifyingglass")
+//                                .font(.system(size: 20, weight: .medium))
+//                                .foregroundColor(.white)
+//                                .frame(width: 36, height: 36)
+//                                .background(Color.white.opacity(0.15))
+//                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+//                        }
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 12)
