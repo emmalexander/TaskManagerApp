@@ -1,8 +1,9 @@
 import SwiftUI
 
 struct SignInView: View {
-    @State private var email = ""
-    @State private var password = ""
+    @StateObject private var viewModel = SignInViewModel()
+    
+    @State private var showSignUp = false
     
     var body: some View {
         ZStack {
@@ -22,7 +23,7 @@ struct SignInView: View {
                 
                 // Form Card
                 VStack(spacing: 20) {
-                    TextField("Email", text: $email)
+                    TextField("Email", text: $viewModel.email)
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
@@ -30,22 +31,27 @@ struct SignInView: View {
                         .background(.ultraThinMaterial)
                         .cornerRadius(12)
                     
-                    SecureField("Password", text: $password)
+                    SecureField("Password", text: $viewModel.password)
                         .padding()
                         .background(.ultraThinMaterial)
                         .cornerRadius(12)
                     
-                    Button {
-                        // Action
-                    } label: {
-                        Text("Sign In")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.white)
-                            .foregroundColor(.accentColor)
-                            .cornerRadius(12)
+                    LoadingButton(
+                        title: "Sign In",
+                        backgroundColor: .accentColor,
+                        isLoading: $viewModel.isLoading
+                    ) {
+                        viewModel.signIn()
                     }
+                    
+                    Button {
+                        showSignUp.toggle()
+                    } label: {
+                        Text("Don't have an account? Sign Up")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top, 4)
                 }
                 .padding(30)
                 .background(.regularMaterial)
@@ -58,6 +64,23 @@ struct SignInView: View {
             .padding(.horizontal)
         }
         .navigationBarHidden(true)
+        .navigationDestination(isPresented: $showSignUp){
+            SignUpView()
+        }
+        .navigationDestination(isPresented: $viewModel.signInSuccess) {
+            MainTabView()
+                .navigationBarBackButtonHidden(true)
+        }
+        .alert("Error", isPresented: Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { _ in viewModel.errorMessage = nil }
+        )) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            if let errorMessage = viewModel.errorMessage {
+                Text(errorMessage)
+            }
+        }
     }
 }
 

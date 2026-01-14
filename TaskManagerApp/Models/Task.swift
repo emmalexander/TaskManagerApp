@@ -7,7 +7,8 @@
 
 import Foundation
 
-struct Task {
+struct TaskModel: Identifiable {
+    var id: ObjectIdentifier
     var name: String
     var isCompleted: Bool
     var progress: Double
