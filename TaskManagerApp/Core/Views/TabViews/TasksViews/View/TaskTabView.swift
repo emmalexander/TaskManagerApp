@@ -29,12 +29,6 @@ struct TaskTabView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 100) // space for bottom bar
             }
-            
-            // Floating Action Button
-            HStack {
-                
-            }
-
         }
         .background(Color(uiColor: .systemGroupedBackground))
         
@@ -45,7 +39,7 @@ struct TaskTabView: View {
 private extension TaskTabView {
     var header: some View {
         HStack {
-            Text("Home")
+            Text("Task Manager")
                 .font(.title)
                 .foregroundStyle(.secondary)
             Spacer()
@@ -71,14 +65,23 @@ private extension TaskTabView {
     }
 
     var greeting: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Hello Rohan!")
-                .font(.system(size: 32, weight: .bold))
-                .foregroundStyle(.primary)
-            Text("Have a nice day.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
+            VStack(alignment: .leading, spacing: 6) {
+                
+                if viewModel.isLoading {
+                    SkeletonView(.rect(cornerRadius: 5))
+                        .frame(width: 150, height: 30)
+                } else {
+                    Text("Hello \(viewModel.user?.firstName ?? "")!")
+                        .font(.system(size: 32, weight: .bold))
+                        .foregroundStyle(.primary)
+                }
+                
+                Text("Have a nice day.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        
+        
     }
 }
 

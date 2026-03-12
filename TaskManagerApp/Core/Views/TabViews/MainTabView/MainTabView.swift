@@ -16,7 +16,9 @@ struct MainTabView: View {
             case 0:
                 TaskTabView(viewModel: viewModel)
             case 1:
-                TaskCalendarView(viewModel: viewModel)
+                ScrollView {
+                    Text("Calendar Page")
+                }
             case 2:
                 ScrollView {
                     Text("Notification Page")
@@ -36,6 +38,9 @@ struct MainTabView: View {
             BottomTabBar(viewModel: viewModel)
         }
         .background(Color(uiColor: .systemGroupedBackground))
+        .onAppear{
+            viewModel.getUser()
+        }
     }
 }
 

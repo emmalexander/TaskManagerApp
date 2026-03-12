@@ -3,6 +3,7 @@ import SwiftUI
 struct SplashScreen: View {
     @State private var animateIn = false
     @State private var navigateToOnboarding = false
+    @State private var navigateToMain = false
 
     var body: some View {
         NavigationStack {
@@ -34,12 +35,20 @@ struct SplashScreen: View {
 
                 // Navigate after ~3 seconds
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                    navigateToOnboarding = true
+                    if TokenManager.shared.checkTokenValidity() {
+                        navigateToMain = true
+                    } else {
+                        navigateToOnboarding = true
+                    }
                 }
             }
             // Programmatic navigation to onboarding
             .navigationDestination(isPresented: $navigateToOnboarding) {
                 OnboardingView()
+            }
+            .navigationDestination(isPresented: $navigateToMain) {
+                MainTabView()
+                    .navigationBarBackButtonHidden(true)
             }
             // Hide back button if user swipes back from onboarding inadvertently
             .navigationBarBackButtonHidden(true)

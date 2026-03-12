@@ -39,6 +39,7 @@ class SignInViewModel: ObservableObject {
                     print("DEBUG: Sign in successful")
                 }
             } catch {
+                // Since APIError conforms to LocalizedError, this will capture the specific API error message
                 errorMessage = error.localizedDescription
                 print("DEBUG: Sign in error: \(error.localizedDescription)")
             }

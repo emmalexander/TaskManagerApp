@@ -7,10 +7,18 @@
 
 import Foundation
 
-struct TaskModel: Identifiable {
-    var id: ObjectIdentifier
-    var name: String
-    var isCompleted: Bool
-    var progress: Double
-    let createdAt: Date
+struct TaskModel: Identifiable, Decodable {
+    let id: String
+    var title: String
+    var description: String?
+    var status: String
+    let dueDate: Date?
+    let userId: String
+    let taskListId: String
+    let createdAt, updatedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id = "_id"
+        case title, description, status, dueDate, userId, taskListId, createdAt, updatedAt
+    }
 }
