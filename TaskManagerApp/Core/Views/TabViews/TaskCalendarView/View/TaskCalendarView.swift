@@ -1,187 +1,150 @@
+//
+//  TaskCalendarView.swift
+//  TaskManagerApp
+//
+
 import SwiftUI
 
 struct TaskCalendarView: View {
-    @ObservedObject var viewModel: TasksViewModel
-    @State private var selectedIndex: Int = 1
-    @State private var showingAddTask: Bool = false
-    
-    private let weekdays = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
-    private let dates = Array(3...9)
+    @StateObject var viewModel = TaskCalendarViewModel()
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                HeaderView()
-                
-                MonthHeaderView {
-                    showingAddTask = true
+        VStack(spacing: 0) {
+            // Header
+            header
+            
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+                    // Date Picker Placeholder (Simple horizontal week view)
+                    weekCalendar
+                    
+                    // Tasks Section
+                    tasksSection
                 }
-                
-                WeekdaySelectorView(
-                    weekdays: weekdays,
-                    dates: dates,
-                    selectedIndex: $selectedIndex
-                )
-                
-                Text("Tasks")
-                    .font(.title2.bold())
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
-                
-                VStack(spacing: 12) {
-                    ForEach(0..<3) { _ in
-                        TaskCardView()
+                .padding(.top, 24)
+                .padding(.bottom, 100)
+            }
+        }
+        .background(Color(uiColor: .systemGroupedBackground))
+    }
+    
+    private var header: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Calendar")
+                    .font(.largeTitle.weight(.bold))
+                Text(Date().formatted(.dateTime.month(.wide).year()))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button(action: {}) {
+                Image(systemName: "calendar")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .padding(10)
+                    .background(Circle().fill(Color(uiColor: .secondarySystemBackground)))
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
+    }
+    
+    private var weekCalendar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                ForEach(0..<14) { index in
+                    let date = Calendar.current.date(byAdding: .day, value: index, to: Date()) ?? Date()
+                    let isSelected = Calendar.current.isDate(date, inSameDayAs: viewModel.selectedDate)
+                    
+                    Button(action: { withAnimation { viewModel.selectedDate = date } }) {
+                        VStack(spacing: 12) {
+                            Text(date.formatted(.dateTime.weekday(.abbreviated)))
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(isSelected ? .white : .secondary)
+                            
+                            Text(date.formatted(.dateTime.day()))
+                                .font(.headline.weight(.bold))
+                                .foregroundStyle(isSelected ? .white : .primary)
+                        }
+                        .frame(width: 50, height: 80)
+                        .background(
+                            Group {
+                                if isSelected {
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(LinearGradient(colors: [Color(hex: 0x7B61FF), Color(hex: 0x5B8BFF)], startPoint: .top, endPoint: .bottom))
+                                } else {
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(Color(uiColor: .secondarySystemBackground))
+                                }
+                            }
+                        )
+                        .shadow(color: isSelected ? Color(hex: 0x7B61FF).opacity(0.3) : .clear, radius: 8, x: 0, y: 4)
                     }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+    
+    private var tasksSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Schedule")
+                .font(.headline)
+                .padding(.horizontal, 20)
+            
+            if viewModel.tasksForSelectedDate.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "calendar.badge.plus")
+                        .font(.system(size: 40))
+                        .foregroundStyle(.tertiary)
+                    Text("No tasks for this day")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+            } else {
+                // In a real app, we would list tasks here
+                ForEach(viewModel.tasksForSelectedDate) { task in
+                    TaskRow(task: task)
                 }
                 .padding(.horizontal, 20)
             }
-            .padding(.vertical, 16)
         }
-        .sheet(isPresented: $showingAddTask) {
-            NavigationStack { AddTaskView() }
-        }
-        .background(Color(uiColor: .systemGroupedBackground))
-        .edgesIgnoringSafeArea(.bottom)
     }
 }
 
-fileprivate struct HeaderView: View {
-    var body: some View {
-        HStack {
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(Color.purple.opacity(0.2))
-                .frame(width: 32, height: 32)
-                .overlay(
-                    Image(systemName: "square.grid.2x2")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(Color.purple)
-                )
-            
-            Spacer()
-            
-            Button {
-                // search action placeholder
-            } label: {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(.primary)
-                    .frame(width: 36, height: 36)
-            }
-        }
-        .padding(.horizontal, 20)
-    }
-}
-
-fileprivate struct MonthHeaderView: View {
-    var addTaskAction: () -> Void
-    
-    var body: some View {
-        HStack(spacing: 0) {
-            Text("Oct, 2020")
-                .font(.system(size: 28, weight: .bold))
-                .foregroundColor(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            Button(action: addTaskAction) {
-                Text("+ Add Task")
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundColor(.white)
-                    .padding(.vertical, 12)
-                    .padding(.horizontal, 16)
-                    .background(
-                        LinearGradient(
-                            colors: [Color.purple.opacity(0.9), Color.blue.opacity(0.7)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .clipShape(Capsule())
-            }
-        }
-        .padding(.horizontal, 20)
-    }
-}
-
-fileprivate struct WeekdaySelectorView: View {
-    let weekdays: [String]
-    let dates: [Int]
-    @Binding var selectedIndex: Int
+struct TaskRow: View {
+    let task: TaskModel
     
     var body: some View {
         HStack(spacing: 16) {
-            ForEach(weekdays.indices, id: \.self) { i in
-                let isSelected = i == selectedIndex
-                VStack(spacing: 6) {
-                    Text(weekdays[i])
-                        .font(.system(size: 14).weight(.medium))
-                        .foregroundColor(isSelected ? .white : .primary)
-                    
-                    ZStack {
-                        if isSelected {
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .fill(Color.purple.opacity(0.2))
-                                .frame(width: 38, height: 46)
-                            Circle()
-                                .fill(Color.purple)
-                                .frame(width: 8, height: 8)
-                                .offset(y: 16)
-                            Text("\(dates[i])")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(.white)
-                                .frame(height: 24)
-                        } else {
-                            Text("\(dates[i])")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.primary)
-                                .frame(height: 24)
-                        }
-                    }
-                }
-                .frame(width: 38)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedIndex = i
-                    }
-                }
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 20)
-    }
-}
-
-fileprivate struct TaskCardView: View {
-    var body: some View {
-        HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color.purple.opacity(0.15))
-                .frame(width: 48, height: 48)
-                .overlay(
-                    Image(systemName: "calendar")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(Color.purple)
-                )
+            Circle()
+                .fill(Color(hex: 0x7B61FF))
+                .frame(width: 8, height: 8)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text("Design Changes")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                Text("2 Days ago")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
+                Text(task.title)
+                    .font(.subheadline.weight(.semibold))
+                Text(task.status)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             
             Spacer()
+            
+            Text("10:00 AM") // Placeholder
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
-        .padding(16)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
+        .padding()
+        .background(RoundedRectangle(cornerRadius: 16).fill(Color(uiColor: .secondarySystemBackground)))
     }
 }
 
 #Preview {
-    TaskCalendarView(viewModel: TasksViewModel())
+    TaskCalendarView()
+        .environmentObject(MainTabViewModel())
 }

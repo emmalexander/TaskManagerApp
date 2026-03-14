@@ -1,9 +1,14 @@
 import SwiftUI
 
 struct OnboardingView: View {
+    
     @State private var currentPage = 0
     @State private var showSignIn = false
     @State private var showSignUp = false
+    
+    init(currentPage: Int = 0){
+        _currentPage = .init(initialValue: currentPage)
+    }
     
     let pages = [
         OnboardingPage(

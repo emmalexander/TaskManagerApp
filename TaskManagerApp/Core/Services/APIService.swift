@@ -33,7 +33,7 @@ class APIService {
     
     private init() {}
     
-    static let baseURL =  "http://192.168.1.155:5500/api/v1/" //192.168.1.155
+    static let baseURL =  "http://192.168.1.155:5500/api/v1/" //192.168.1.155 //10.128.197.209
     
     private let signUpURL: String =  baseURL + "auth/sign-up"
     private let signInURL: String =  baseURL + "auth/sign-in"
@@ -124,13 +124,14 @@ class APIService {
             throw APIError.requestFailed(description: "Invalid response")
         }
         
-        if let responseString = String(data: data, encoding: .utf8) {
-             print("📄 [API Data] \(responseString)")
-        }
+//        if let responseString = String(data: data, encoding: .utf8) {
+//             //print("📄 [API Data] \(responseString)")
+//        }
         
         if (200...299).contains(httpResponse.statusCode) {
             do {
                 let response = try JSONDecoder.apiDecoder.decode(GetUserResponse.self, from: data)
+                print("Response decoded successfully")
                 return response
             } catch {
                 if let decodingError = error as? DecodingError {

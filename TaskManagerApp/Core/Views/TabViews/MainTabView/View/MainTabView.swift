@@ -8,34 +8,26 @@
 import SwiftUI
 
 struct MainTabView: View {
-    @ObservedObject var viewModel: TasksViewModel = TasksViewModel()
+    @EnvironmentObject var viewModel: MainTabViewModel
     
     var body: some View {
         ZStack(alignment: .bottom) {
             switch viewModel.selectedTab {
             case 0:
-                TaskTabView(viewModel: viewModel)
+                TaskTabView()
             case 1:
-                ScrollView {
-                    Text("Calendar Page")
-                }
+                TaskCalendarView()
             case 2:
-                ScrollView {
-                    Text("Notification Page")
-                }
+                NotificationView()
             case 3:
-                ScrollView {
-                    Text("Search Page")
-                }
+                ProfileView()
             default:
-                ScrollView {
-                    EmptyView()
-                }
+                EmptyView()
             }
             
             Spacer()
             
-            BottomTabBar(viewModel: viewModel)
+            BottomTabBar()
         }
         .background(Color(uiColor: .systemGroupedBackground))
         .onAppear{
@@ -46,4 +38,5 @@ struct MainTabView: View {
 
 #Preview {
     MainTabView()
+        .environmentObject(MainTabViewModel())
 }

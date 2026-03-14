@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct TaskTabView: View {
-    @ObservedObject var viewModel: TasksViewModel
+    @EnvironmentObject var viewModel: MainTabViewModel
     @State private var showingAddTask: Bool = false
 
     var body: some View {
@@ -258,7 +258,8 @@ struct ProgressRowView: View {
 
 #Preview {
     NavigationStack {
-        TaskTabView(viewModel: TasksViewModel())
+        TaskTabView()
+            .environmentObject(MainTabViewModel())
             .navigationTitle("")
             .navigationBarHidden(true)
     }
