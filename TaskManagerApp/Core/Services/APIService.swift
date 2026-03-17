@@ -38,6 +38,7 @@ class APIService {
     private let signUpURL: String =  baseURL + "auth/sign-up"
     private let signInURL: String =  baseURL + "auth/sign-in"
     private let getUserUrl: String =  baseURL + "users/"
+    private let getUserTasksByStatusUrl: String =  baseURL + "status/"
     
     /// Signs up a user via the API
     func signUp(userData: [String: Any]) async throws -> Bool {
@@ -194,6 +195,53 @@ class APIService {
             let responseString = String(data: data, encoding: .utf8) ?? "Unknown error"
             print("❌ [API Error Raw] \(responseString)")
             throw APIError.requestFailed(description: "Server returned \(httpResponse.statusCode): \(responseString)")
+        }
+    }
+    
+    func getUserTasksByStatus(status: String) async throws -> GetTasksByStatusResponse {
+        guard let url = URL(string: "\(getUserTasksByStatusUrl)/\(status)") else {
+            throw APIError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        
+        if let token = TokenManager.shared.token {
+            if !TokenManager.shared.checkTokenValidity() {
+                throw APIError.requestFailed(description: "Session Expired. Please sign in again.")
+            }
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.requestFailed(description: "Invalid response")
+        }
+        
+//        if let responseString = String(data: data, encoding: .utf8) {
+//             //print("📄 [API Data] \(responseString)")
+//        }
+        
+        if (200...299).contains(httpResponse.statusCode) {
+            do {
+                let response = try JSONDecoder.apiDecoder.decode(GetTasksByStatusResponse.self, from: data)
+                print("Response decoded successfully")
+                return response
+            } catch {
+                if let decodingError = error as? DecodingError {
+                    print("❌ [Decoding Error] \(decodingError)")
+                }
+                throw APIError.unableToDecode(error: error)
+            }
+        } else {
+            if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
+                let errorMessage = errorResponse.error ?? errorResponse.message ?? "Unknown error"
+                throw APIError.requestFailed(description: errorMessage)
+            }
+            throw APIError.requestFailed(description: "Server returned \(httpResponse.statusCode)")
         }
     }
 }

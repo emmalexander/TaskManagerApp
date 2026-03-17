@@ -15,10 +15,11 @@ struct TaskModel: Identifiable, Decodable {
     let dueDate: Date?
     let userId: String
     let taskListId: String
+    var isStarred: Bool?
     let createdAt, updatedAt: Date
 
     enum CodingKeys: String, CodingKey {
         case id = "_id"
-        case title, description, status, dueDate, userId, taskListId, createdAt, updatedAt
+        case title, description, status, dueDate, userId, taskListId, isStarred, createdAt, updatedAt
     }
 }

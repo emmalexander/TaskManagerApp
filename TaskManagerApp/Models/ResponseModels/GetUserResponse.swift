@@ -29,7 +29,7 @@ struct User: Decodable {
     }
 }
 
-struct TaskList: Decodable {
+struct TaskList: Identifiable, Decodable {
     let id: String
     let name: String
     let description: String?

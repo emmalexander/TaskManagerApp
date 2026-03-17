@@ -32,6 +32,7 @@ struct MainTabView: View {
         .background(Color(uiColor: .systemGroupedBackground))
         .onAppear{
             viewModel.getUser()
+            viewModel.getUserTasksInProgress()
         }
     }
 }
