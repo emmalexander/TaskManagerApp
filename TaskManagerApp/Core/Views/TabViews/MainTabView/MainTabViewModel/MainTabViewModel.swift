@@ -65,23 +65,95 @@ class MainTabViewModel: ObservableObject {
     
     var filteredTasks: [TaskModel] {
         if selectedTaskListId == "starred" {
-            // Flatten all tasks from all lists and filter for starred
-            // Since we don't have isStarred yet, let's assume it's a property to be added
             return taskLists.flatMap { $0.tasks }.filter { $0.isStarred ?? false }
         } else {
             return taskLists.first(where: { $0.id == selectedTaskListId })?.tasks ?? []
         }
     }
     
+    var pendingTasks: [TaskModel] {
+        filteredTasks.filter { $0.status.lowercased() == "pending" }
+    }
+    
     var inProgressTasks: [TaskModel] {
-        filteredTasks.filter { $0.status.lowercased() == "in-progress" || $0.status.lowercased() == "pending" }
+        filteredTasks.filter { $0.status.lowercased() == "in-progress" }
     }
     
     var completedTasks: [TaskModel] {
         filteredTasks.filter { $0.status.lowercased() == "completed" || $0.status.lowercased() == "done" }
     }
     
-    func getUserTasksInProgress() {
-        // ... existing logic ...
+    // Max 5 tasks for the summary view
+    var pendingTasksLimited: [TaskModel] { Array(pendingTasks.prefix(5)) }
+    var inProgressTasksLimited: [TaskModel] { Array(inProgressTasks.prefix(5)) }
+    var completedTasksLimited: [TaskModel] { Array(completedTasks.prefix(5)) }
+    
+    func deleteTask(taskId: String) {
+        Task {
+            do {
+                let success = try await apiService.deleteTask(taskId: taskId)
+                if success {
+                    await MainActor.run {
+                        getUser() // Refresh data
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
+    
+    func completeTask(task: TaskModel) {
+        Task {
+            do {
+                let success = try await apiService.updateTaskStatus(taskId: task.id, status: "completed")
+                if success {
+                    await MainActor.run {
+                        getUser() // Refresh data
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
+    
+    func toggleFavorite(task: TaskModel) {
+        let isCurrentlyFavorite = task.isStarred ?? false
+        Task {
+            do {
+                let success = try await apiService.toggleFavorite(taskId: task.id, isFavorite: !isCurrentlyFavorite)
+                if success {
+                    await MainActor.run {
+                        getUser() // Refresh data
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
+    
+    func updateTask(task: TaskModel) {
+        Task {
+            do {
+                let success = try await apiService.updateTask(task: task)
+                if success {
+                    await MainActor.run {
+                        getUser() // Refresh data
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                }
+            }
+        }
     }
 }

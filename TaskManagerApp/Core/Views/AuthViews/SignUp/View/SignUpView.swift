@@ -2,8 +2,13 @@ import SwiftUI
 
 struct SignUpView: View {
     @StateObject private var viewModel = SignUpViewModel()
-    //@Environment(\.dismiss) var dismiss
     @State private var showSignIn = false
+    @State private var isPasswordVisible = false
+    @FocusState private var focusedField: Field?
+    
+    enum Field: Hashable {
+        case fullName, phoneNumber, email, password
+    }
     
     var body: some View {
         ZStack {
@@ -25,16 +30,55 @@ struct SignUpView: View {
                     // Form Card
                     VStack(spacing: 20) {
                         
-                        CustomTextFieldView(hintText: "Full Name", text: $viewModel.fullName, textCapitalization: .words)
+                        TextField("Full Name", text: $viewModel.fullName)
+                            .textInputAutocapitalization(.words)
+                            .focused($focusedField, equals: .fullName)
+                            .submitLabel(.next)
+                            .onSubmit { focusedField = .phoneNumber }
+                            .customTextFieldStyle()
                         
-                        CustomTextFieldView(hintText: "Phone number", text: $viewModel.phoneNumber, keyboardType: .phonePad, maxLength: 11)
+                        TextField("Phone number", text: $viewModel.phoneNumber)
+                            .keyboardType(.phonePad)
+                            .focused($focusedField, equals: .phoneNumber)
+                            .submitLabel(.next)
+                            .onSubmit { focusedField = .email }
+                            .onChange(of: viewModel.phoneNumber) { newValue in
+                                if newValue.count > 11 {
+                                    viewModel.phoneNumber = String(newValue.prefix(11))
+                                }
+                            }
+                            .customTextFieldStyle()
                         
-                        CustomTextFieldView(hintText: "Email", text: $viewModel.email, keyboardType: .emailAddress, contentType: .emailAddress)
+                        TextField("Email", text: $viewModel.email)
+                            .keyboardType(.emailAddress)
+                            .textContentType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .focused($focusedField, equals: .email)
+                            .submitLabel(.next)
+                            .onSubmit { focusedField = .password }
+                            .customTextFieldStyle()
                         
-                        SecureField("Password", text: $viewModel.password)
-                            .padding()
-                            .background(.ultraThinMaterial)
-                            .cornerRadius(12)
+                        HStack {
+                            if isPasswordVisible {
+                                TextField("Password", text: $viewModel.password)
+                                    .focused($focusedField, equals: .password)
+                            } else {
+                                SecureField("Password", text: $viewModel.password)
+                                    .focused($focusedField, equals: .password)
+                            }
+                            
+                            Button(action: {
+                                isPasswordVisible.toggle()
+                            }) {
+                                Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .customTextFieldStyle()
+                        .submitLabel(.done)
+                        .onSubmit {
+                            viewModel.signUp()
+                        }
                         
                         LoadingButton(
                             title: "Sign Up",

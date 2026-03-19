@@ -4,6 +4,12 @@ struct SignInView: View {
     @StateObject private var viewModel = SignInViewModel()
     
     @State private var showSignUp = false
+    @State private var isPasswordVisible = false
+    @FocusState private var focusedField: Field?
+    
+    enum Field: Hashable {
+        case email, password
+    }
     
     var body: some View {
         ZStack {
@@ -27,14 +33,34 @@ struct SignInView: View {
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
-                        .padding()
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(12)
+                        .focused($focusedField, equals: .email)
+                        .submitLabel(.next)
+                        .onSubmit {
+                            focusedField = .password
+                        }
+                        .customTextFieldStyle()
                     
-                    SecureField("Password", text: $viewModel.password)
-                        .padding()
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(12)
+                    HStack {
+                        if isPasswordVisible {
+                            TextField("Password", text: $viewModel.password)
+                                .focused($focusedField, equals: .password)
+                        } else {
+                            SecureField("Password", text: $viewModel.password)
+                                .focused($focusedField, equals: .password)
+                        }
+                        
+                        Button(action: {
+                            isPasswordVisible.toggle()
+                        }) {
+                            Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .customTextFieldStyle()
+                    .submitLabel(.done)
+                    .onSubmit {
+                        viewModel.signIn()
+                    }
                     
                     LoadingButton(
                         title: "Sign In",

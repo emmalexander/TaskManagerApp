@@ -14,27 +14,27 @@ struct TaskTabView: View {
     @State private var newTaskListName: String = ""
 
     var body: some View {
-    
-        ZStack(alignment: .bottom) {
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 24) {
+        NavigationStack {
+            List {
+                Group {
                     header
-                        .padding(.horizontal, 20)
                     greeting
-                        .padding(.horizontal, 20)
                     segmentControl
-                        .padding(.horizontal, 20)
                     projectCarousel
-                    progressSection
-                        .padding(.horizontal, 20)
                 }
-                //
-                .padding(.top, 12)
-                .padding(.bottom, 100) // space for bottom bar
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 12, leading: 20, bottom: 0, trailing: 20))
+
+                progressSection
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 100, trailing: 20))
             }
+            .listStyle(.plain)
+            .background(Color(uiColor: .systemGroupedBackground))
+            .navigationBarHidden(true)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
-        
     }
 }
 
@@ -42,7 +42,7 @@ struct TaskTabView: View {
 private extension TaskTabView {
     var header: some View {
         HStack {
-            Text("Task Manager")
+            Text("Tasks")
                 .font(.title)
                 .foregroundStyle(.secondary)
             Spacer()
@@ -78,7 +78,6 @@ private extension TaskTabView {
                         .font(.system(size: 32, weight: .bold))
                         .foregroundStyle(.primary)
                 }
-                
                 Text("Have a nice day.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -241,38 +240,16 @@ private extension TaskTabView {
                     }
                 }
             } else {
-                // In Progress Section
-                if !viewModel.inProgressTasks.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("In Progress")
-                            .font(.headline)
-                            .foregroundStyle(.primary)
+                // Pending Section
+                statusSection(title: "Pending", tasks: viewModel.pendingTasksLimited, totalCount: viewModel.pendingTasks.count, status: "pending")
 
-                        VStack(spacing: 12) {
-                            ForEach(viewModel.inProgressTasks) { task in
-                                ProgressRowView(task: task)
-                            }
-                        }
-                    }
-                }
+                // In Progress Section
+                statusSection(title: "In Progress", tasks: viewModel.inProgressTasksLimited, totalCount: viewModel.inProgressTasks.count, status: "in-progress")
 
                 // Completed Section
-                if !viewModel.completedTasks.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Completed")
-                            .font(.headline)
-                            .foregroundStyle(.primary)
-
-                        VStack(spacing: 12) {
-                            ForEach(viewModel.completedTasks) { task in
-                                ProgressRowView(task: task)
-                                    .opacity(0.7)
-                            }
-                        }
-                    }
-                }
+                statusSection(title: "Completed", tasks: viewModel.completedTasksLimited, totalCount: viewModel.completedTasks.count, status: "completed")
                 
-                if viewModel.inProgressTasks.isEmpty && viewModel.completedTasks.isEmpty {
+                if viewModel.pendingTasks.isEmpty && viewModel.inProgressTasks.isEmpty && viewModel.completedTasks.isEmpty {
                     VStack(spacing: 16) {
                         Image(systemName: "doc.text.magnifyingglass")
                             .font(.system(size: 48))
@@ -291,51 +268,84 @@ private extension TaskTabView {
         }
         .padding(.top, 8)
     }
-}
 
-struct ProgressRowView: View {
-    let task: TaskModel
+    @ViewBuilder
+    func statusSection(title: String, tasks: [TaskModel], totalCount: Int, status: String) -> some View {
+        if !tasks.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .center) {
+                    HStack(spacing: 8) {
+                        Text(title)
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(.primary)
+                        // Count badge
+                        Text("\(totalCount)")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(
+                                Capsule()
+                                    .fill(statusBadgeColor(for: status))
+                            )
+                    }
+                    Spacer()
+                    // Only show "See All" if at 5 tasks (there may be more paginated)
+                    if totalCount >= 5 {
+                        NavigationLink {
+                            statusDestination(for: status)
+                        } label: {
+                            HStack(spacing: 3) {
+                                Text("See all")
+                                    .font(.subheadline.weight(.semibold))
+                                Image(systemName: "chevron.right")
+                                    .font(.caption.weight(.bold))
+                            }
+                            .foregroundStyle(Color(hex: 0x7B61FF))
+                        }
+                    }
+                }
 
-    var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(task.status.lowercased() == "completed" ? Color.green.opacity(0.1) : Color(hex: 0xFFF0F5))
-                    .frame(width: 44, height: 44)
-                Image(systemName: task.status.lowercased() == "completed" ? "checkmark.circle.fill" : "paintbrush.fill")
-                    .foregroundStyle(task.status.lowercased() == "completed" ? Color.green : Color(hex: 0xFF6AA2))
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(task.title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
-                if let description = task.description {
-                    Text(description)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                VStack(spacing: 10) {
+                    ForEach(tasks) { task in
+                        TaskRowView(
+                            task: task,
+                            onDelete: { viewModel.deleteTask(taskId: task.id) },
+                            onComplete: { viewModel.completeTask(task: task) },
+                            onToggleFavorite: { viewModel.toggleFavorite(task: task) },
+                            onEdit: { }
+                        )
+                        .opacity(status == "completed" ? 0.75 : 1.0)
+                    }
                 }
             }
-
-            Spacer()
-
-            Image(systemName: "ellipsis")
-                .rotationEffect(.degrees(90))
-                .foregroundStyle(.secondary)
         }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(.background)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(Color(uiColor: .quaternaryLabel).opacity(0.2))
-        )
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+    }
+
+    private func statusBadgeColor(for status: String) -> Color {
+        switch status.lowercased() {
+        case "completed": return .green
+        case "in-progress": return Color(hex: 0x5B8BFF)
+        default: return Color(hex: 0xFF6AA2)
+        }
+    }
+
+    @ViewBuilder
+    private func statusDestination(for status: String) -> some View {
+        switch status.lowercased() {
+        case "pending":
+            PendingTasksView()
+        case "in-progress":
+            InProgressTasksView()
+        case "completed":
+            CompletedTasksView()
+        default:
+            EmptyView()
+        }
     }
 }
+
+
 
 
 

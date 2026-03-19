@@ -33,12 +33,15 @@ class APIService {
     
     private init() {}
     
-    static let baseURL =  "http://192.168.1.155:5500/api/v1/" //192.168.1.155 //10.128.197.209
+    static let baseURL = EnvironmentVariable.baseUrl
     
     private let signUpURL: String =  baseURL + "auth/sign-up"
     private let signInURL: String =  baseURL + "auth/sign-in"
     private let getUserUrl: String =  baseURL + "users/"
     private let getUserTasksByStatusUrl: String =  baseURL + "status/"
+    private let addTaskToFavoriteUrl: String =  baseURL + "favorites/add/"
+    private let removeTaskFromFavoriteUrl: String =  baseURL + "favorites/remove/"
+    private let tasksUrl: String = baseURL + "tasks/"
     
     /// Signs up a user via the API
     func signUp(userData: [String: Any]) async throws -> Bool {
@@ -117,27 +120,17 @@ class APIService {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         
-//        print("➡️ [API Request] \(request.httpMethod ?? "UNKNOWN") \(request.url?.absoluteString ?? "No URL")")
-        
         let (data, response) = try await URLSession.shared.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.requestFailed(description: "Invalid response")
         }
         
-//        if let responseString = String(data: data, encoding: .utf8) {
-//             //print("📄 [API Data] \(responseString)")
-//        }
-        
         if (200...299).contains(httpResponse.statusCode) {
             do {
                 let response = try JSONDecoder.apiDecoder.decode(GetUserResponse.self, from: data)
-                print("Response decoded successfully")
                 return response
             } catch {
-                if let decodingError = error as? DecodingError {
-                    print("❌ [Decoding Error] \(decodingError)")
-                }
                 throw APIError.unableToDecode(error: error)
             }
         } else {
@@ -154,7 +147,6 @@ class APIService {
         var authRequest = request
         
         if requireAuth {
-            // Inject token if it exists and is valid
             if let token = TokenManager.shared.token {
                 if !TokenManager.shared.checkTokenValidity() {
                     throw APIError.requestFailed(description: "Session Expired. Please sign in again.")
@@ -163,21 +155,10 @@ class APIService {
             }
         }
         
-        print("➡️ [API Request] \(authRequest.httpMethod ?? "UNKNOWN") \(authRequest.url?.absoluteString ?? "No URL")")
-        if let body = authRequest.httpBody, let bodyString = String(data: body, encoding: .utf8) {
-            print("📝 [API Body] \(bodyString)")
-        }
-        
         let (data, response) = try await URLSession.shared.data(for: authRequest)
         
         guard let httpResponse = response as? HTTPURLResponse else {
-            print("❌ [API Error] Invalid response object")
             throw APIError.requestFailed(description: "Invalid response")
-        }
-        
-        print("⬅️ [API Response] Status: \(httpResponse.statusCode)")
-        if let responseString = String(data: data, encoding: .utf8) {
-             print("📄 [API Data] \(responseString)")
         }
         
         if (200...299).contains(httpResponse.statusCode) {
@@ -188,25 +169,27 @@ class APIService {
             }
             if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
                 let errorMessage = errorResponse.error ?? errorResponse.message ?? "Unknown error"
-                print("❌ [API Error Message] \(errorMessage)")
                 throw APIError.requestFailed(description: errorMessage)
             }
-            
-            let responseString = String(data: data, encoding: .utf8) ?? "Unknown error"
-            print("❌ [API Error Raw] \(responseString)")
-            throw APIError.requestFailed(description: "Server returned \(httpResponse.statusCode): \(responseString)")
+            throw APIError.requestFailed(description: "Server returned \(httpResponse.statusCode)")
         }
     }
     
-    func getUserTasksByStatus(status: String) async throws -> GetTasksByStatusResponse {
-        guard let url = URL(string: "\(getUserTasksByStatusUrl)/\(status)") else {
+    func getUserTasksByStatus(status: String, page: Int = 1, limit: Int = 10) async throws -> GetTasksByStatusResponse {
+        guard var urlComponents = URLComponents(string: "\(getUserTasksByStatusUrl)\(status)") else {
             throw APIError.invalidURL
         }
+        
+        urlComponents.queryItems = [
+            URLQueryItem(name: "page", value: "\(page)"),
+            URLQueryItem(name: "limit", value: "\(limit)")
+        ]
+        
+        guard let url = urlComponents.url else { throw APIError.invalidURL }
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
         
         if let token = TokenManager.shared.token {
             if !TokenManager.shared.checkTokenValidity() {
@@ -221,27 +204,61 @@ class APIService {
             throw APIError.requestFailed(description: "Invalid response")
         }
         
-//        if let responseString = String(data: data, encoding: .utf8) {
-//             //print("📄 [API Data] \(responseString)")
-//        }
-        
         if (200...299).contains(httpResponse.statusCode) {
             do {
                 let response = try JSONDecoder.apiDecoder.decode(GetTasksByStatusResponse.self, from: data)
-                print("Response decoded successfully")
                 return response
             } catch {
-                if let decodingError = error as? DecodingError {
-                    print("❌ [Decoding Error] \(decodingError)")
-                }
                 throw APIError.unableToDecode(error: error)
             }
         } else {
             if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
-                let errorMessage = errorResponse.error ?? errorResponse.message ?? "Unknown error"
-                throw APIError.requestFailed(description: errorMessage)
+                throw APIError.requestFailed(description: errorResponse.error ?? errorResponse.message ?? "Unknown error")
             }
             throw APIError.requestFailed(description: "Server returned \(httpResponse.statusCode)")
         }
     }
+    
+    func deleteTask(taskId: String) async throws -> Bool {
+        guard let url = URL(string: "\(tasksUrl)\(taskId)") else { throw APIError.invalidURL }
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        return try await performRequest(request)
+    }
+    
+    func updateTaskStatus(taskId: String, status: String) async throws -> Bool {
+        guard let url = URL(string: "\(tasksUrl)\(taskId)") else { throw APIError.invalidURL }
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let body = ["status": status]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        return try await performRequest(request)
+    }
+    
+    func updateTask(task: TaskModel) async throws -> Bool {
+        guard let url = URL(string: "\(tasksUrl)\(task.id)") else { throw APIError.invalidURL }
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let body: [String: Any?] = [
+            "title": task.title,
+            "description": task.description,
+            "status": task.status,
+            "isStarred": task.isStarred
+        ]
+        
+        request.httpBody = try JSONSerialization.data(withJSONObject: body.compactMapValues { $0 })
+        return try await performRequest(request)
+    }
+    
+    func toggleFavorite(taskId: String, isFavorite: Bool) async throws -> Bool {
+        let path = isFavorite ? addTaskToFavoriteUrl : removeTaskFromFavoriteUrl
+        guard let url = URL(string: "\(path)\(taskId)") else { throw APIError.invalidURL }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        return try await performRequest(request)
+    }
+    
 }
