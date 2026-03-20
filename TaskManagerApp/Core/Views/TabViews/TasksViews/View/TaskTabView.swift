@@ -15,25 +15,16 @@ struct TaskTabView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                Group {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading) {
                     header
                     greeting
                     segmentControl
                     projectCarousel
+                    tasksSection
                 }
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 12, leading: 20, bottom: 0, trailing: 20))
-
-                progressSection
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 100, trailing: 20))
+                .navigationBarHidden(true)
             }
-            .listStyle(.plain)
-            .background(Color(uiColor: .systemGroupedBackground))
-            .navigationBarHidden(true)
         }
     }
 }
@@ -61,10 +52,12 @@ private extension TaskTabView {
             }
             .buttonStyle(.plain)
             .padding(.bottom, 20)
+            
         }
         .sheet(isPresented: $showingAddTask) {
             NavigationStack { AddTaskView() }
         }
+        .padding(.horizontal, 20)
     }
 
     var greeting: some View {
@@ -82,6 +75,7 @@ private extension TaskTabView {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
+            .padding(.horizontal, 20)
         
         
     }
@@ -116,15 +110,13 @@ private extension TaskTabView {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, 16)
         }
         .alert("New Task List", isPresented: $showingAddTaskList) {
             TextField("List Name", text: $newTaskListName)
             Button("Cancel", role: .cancel) { newTaskListName = "" }
             Button("Create") {
-                // Here you would call a viewModel method to create the list
-                // For now, let's just print or assume it's handled
-                print("Creating list: \(newTaskListName)")
+                viewModel.createTaskList(name: newTaskListName)
                 newTaskListName = ""
             }
         } message: {
@@ -173,62 +165,9 @@ private extension TaskTabView {
     }
 }
 
-struct ProjectCardView: View {
-    let title: String
-    let subtitle: String
-    let date: String
-    let gradient: [Color]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                HStack(spacing: 8) {
-                    Image(systemName: "bolt.fill")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.9))
-                        .padding(8)
-                        .background(.white.opacity(0.2), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    Text(subtitle)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.9))
-                }
-                Spacer()
-                Button(action: {}) {
-                    Image(systemName: "ellipsis")
-                        .rotationEffect(.degrees(90))
-                        .foregroundStyle(.white.opacity(0.9))
-                        .padding(8)
-                        .background(.white.opacity(0.15), in: Circle())
-                }
-                .buttonStyle(.plain)
-            }
-
-            Text(title)
-                .font(.title3.weight(.bold))
-                .foregroundStyle(.white)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Text(date)
-                .font(.footnote)
-                .foregroundStyle(.white.opacity(0.85))
-        }
-        .padding(16)
-        .frame(width: 240, alignment: .leading)
-        .background(
-            LinearGradient(colors: gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .strokeBorder(.white.opacity(0.08))
-        )
-        .shadow(color: Color.black.opacity(0.2), radius: 12, x: 0, y: 10)
-    }
-}
-
 // MARK: - Progress Section
 private extension TaskTabView {
-    var progressSection: some View {
+    var tasksSection: some View {
         VStack(alignment: .leading, spacing: 20) {
             if viewModel.isLoading {
                 VStack(alignment: .leading, spacing: 12) {
@@ -305,6 +244,7 @@ private extension TaskTabView {
                         }
                     }
                 }
+                .padding(.horizontal, 16)
 
                 VStack(spacing: 10) {
                     ForEach(tasks) { task in

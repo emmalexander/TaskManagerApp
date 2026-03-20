@@ -10,6 +10,8 @@ class ProfileViewModel: ObservableObject {
     @Published var user: User?
     @Published var isLoading = false
     @Published var errorMessage: String? = nil
+    @Published var showingManageLists = false
+    @Published var showingPersonalInfo = false
     
     private let apiService = APIService.shared
     
@@ -33,6 +35,6 @@ class ProfileViewModel: ObservableObject {
     }
     
     func logout() {
-        TokenManager.shared.clearTokenAndAlert()
+        //TokenManager.shared.clearTokenAndAlert()
     }
 }

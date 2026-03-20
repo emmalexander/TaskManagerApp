@@ -42,6 +42,7 @@ class APIService {
     private let addTaskToFavoriteUrl: String =  baseURL + "favorites/add/"
     private let removeTaskFromFavoriteUrl: String =  baseURL + "favorites/remove/"
     private let tasksUrl: String = baseURL + "tasks/"
+    private let taskListsUrl: String = baseURL + "task-lists/"
     
     /// Signs up a user via the API
     func signUp(userData: [String: Any]) async throws -> Bool {
@@ -140,6 +141,22 @@ class APIService {
             }
             throw APIError.requestFailed(description: "Server returned \(httpResponse.statusCode)")
         }
+    }
+    
+    func updateUser(firstName: String, lastName: String, phoneNumber: String?) async throws -> Bool {
+        guard let url = URL(string: getUserUrl) else { throw APIError.invalidURL }
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let body: [String: Any?] = [
+            "firstName": firstName,
+            "lastName": lastName,
+            "phoneNumber": phoneNumber
+        ]
+        
+        request.httpBody = try JSONSerialization.data(withJSONObject: body.compactMapValues { $0 })
+        return try await performRequest(request)
     }
     
     /// Performs a generic request, optionally adding Auth header if token is available
@@ -258,6 +275,45 @@ class APIService {
         guard let url = URL(string: "\(path)\(taskId)") else { throw APIError.invalidURL }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        return try await performRequest(request)
+    }
+    
+    // MARK: - Task List Management
+    
+    func deleteTaskList(listId: String) async throws -> Bool {
+        guard let url = URL(string: "\(taskListsUrl)\(listId)") else { throw APIError.invalidURL }
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        return try await performRequest(request)
+    }
+    
+    func updateTaskList(listId: String, name: String, description: String?) async throws -> Bool {
+        guard let url = URL(string: "\(taskListsUrl)\(listId)") else { throw APIError.invalidURL }
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let body: [String: Any?] = [
+            "name": name,
+            "description": description
+        ]
+        
+        request.httpBody = try JSONSerialization.data(withJSONObject: body.compactMapValues { $0 })
+        return try await performRequest(request)
+    }
+    
+    func createTaskList(name: String, description: String?) async throws -> Bool {
+        guard let url = URL(string: taskListsUrl) else { throw APIError.invalidURL }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let body: [String: Any?] = [
+            "name": name,
+            "description": description
+        ]
+        
+        request.httpBody = try JSONSerialization.data(withJSONObject: body.compactMapValues { $0 })
         return try await performRequest(request)
     }
     

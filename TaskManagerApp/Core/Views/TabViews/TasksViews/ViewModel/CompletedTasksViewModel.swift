@@ -53,11 +53,13 @@ class CompletedTasksViewModel: ObservableObject {
                 if success {
                     await MainActor.run {
                         self.tasks.removeAll { $0.id == taskId }
+                        ToastManager.shared.show("Task deleted successfully", type: .success)
                     }
                 }
             } catch {
                 await MainActor.run {
                     self.errorMessage = error.localizedDescription
+                    ToastManager.shared.show("Failed to delete task", type: .error)
                 }
             }
         }

@@ -1,69 +1,61 @@
 import SwiftUI
 
 struct SplashScreen: View {
+    @Binding var appState: ContentView.AppState
+    
     @State private var animateIn = false
-    @State private var navigateToOnboarding = false
-    @State private var navigateToMain = false
     @State private var logoScale = 0.6
     @State private var logoOpacity = 0.0
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                // Premium Gradient Background matching the new icon
-                LinearGradient(
-                    gradient: Gradient(colors: [Color(hex: "001A6E"), Color(hex: "00B4DB")]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+        ZStack {
+            // Premium Gradient Background matching the new icon
+            LinearGradient(
+                gradient: Gradient(colors: [Color(hex: "001A6E"), Color(hex: "00B4DB")]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
 
-                VStack(spacing: 24) {
-                    // New App Logo Animation
-                    Image("AppLogo")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 140, height: 140)
-                        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
-                        .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
-                        .scaleEffect(logoScale)
-                        .opacity(logoOpacity)
-                    
-                    Text("Task Manager")
-                        .font(.system(size: 38, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                        .opacity(animateIn ? 1.0 : 0.0)
-                        .offset(y: animateIn ? 0 : 20)
-                }
-            }
-            .onAppear {
-                // Smooth Entry Animation
-                withAnimation(.spring(response: 0.8, dampingFraction: 0.6, blendDuration: 0)) {
-                    logoScale = 1.0
-                    logoOpacity = 1.0
-                }
+            VStack(spacing: 24) {
+                // New App Logo Animation
+                Image("AppLogo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 140, height: 140)
+                    .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+                    .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
+                    .scaleEffect(logoScale)
+                    .opacity(logoOpacity)
                 
-                withAnimation(.easeOut(duration: 0.8).delay(0.3)) {
-                    animateIn = true
-                }
+                Text("Task Manager")
+                    .font(.system(size: 38, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .opacity(animateIn ? 1.0 : 0.0)
+                    .offset(y: animateIn ? 0 : 20)
+            }
+        }
+        .onAppear {
+            // Smooth Entry Animation
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.6, blendDuration: 0)) {
+                logoScale = 1.0
+                logoOpacity = 1.0
+            }
+            
+            withAnimation(.easeOut(duration: 0.8).delay(0.3)) {
+                animateIn = true
+            }
 
-                // Navigate after ~2.5 seconds
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            // Move to appropriate app state after ~2.5 seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                withAnimation(.easeInOut(duration: 0.5)) {
                     if TokenManager.shared.checkTokenValidity() {
-                        navigateToMain = true
+                        appState = .main
                     } else {
-                        navigateToOnboarding = true
+                        appState = .onboarding
                     }
                 }
             }
-            .navigationDestination(isPresented: $navigateToOnboarding) {
-                OnboardingView(currentPage: 2)
-            }
-            .navigationDestination(isPresented: $navigateToMain) {
-                MainTabView()
-                    .navigationBarBackButtonHidden(true)
-            }
-            .navigationBarBackButtonHidden(true)
         }
     }
 }
@@ -97,5 +89,5 @@ extension Color {
 }
 
 #Preview {
-    SplashScreen()
+    SplashScreen(appState: .constant(.splash))
 }

@@ -94,12 +94,14 @@ class MainTabViewModel: ObservableObject {
                 let success = try await apiService.deleteTask(taskId: taskId)
                 if success {
                     await MainActor.run {
+                        ToastManager.shared.show("Task deleted successfully", type: .success)
                         getUser() // Refresh data
                     }
                 }
             } catch {
                 await MainActor.run {
                     self.errorMessage = error.localizedDescription
+                    ToastManager.shared.show("Failed to delete task", type: .error)
                 }
             }
         }
@@ -154,6 +156,88 @@ class MainTabViewModel: ObservableObject {
                     self.errorMessage = error.localizedDescription
                 }
             }
+        }
+    }
+    
+    // MARK: - Task List Management
+    
+    func deleteTaskList(listId: String) {
+        Task {
+            @MainActor in
+            isLoading = true
+            do {
+                let success = try await apiService.deleteTaskList(listId: listId)
+                if success {
+                    ToastManager.shared.show("List deleted successfully", type: .success)
+                    getUser() // Refresh data
+                } else {
+                    ToastManager.shared.show("Failed to delete list", type: .error)
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+                ToastManager.shared.show("Failed to delete list", type: .error)
+            }
+            isLoading = false
+        }
+    }
+    
+    func updateTaskList(listId: String, name: String, description: String?) {
+        Task {
+            @MainActor in
+            isLoading = true
+            do {
+                let success = try await apiService.updateTaskList(listId: listId, name: name, description: description)
+                if success {
+                    ToastManager.shared.show("List updated successfully", type: .success)
+                    getUser() // Refresh data
+                } else {
+                    ToastManager.shared.show("Failed to update list", type: .error)
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+                ToastManager.shared.show("Failed to update list", type: .error)
+            }
+            isLoading = false
+        }
+    }
+    
+    func createTaskList(name: String, description: String? = nil) {
+        Task {
+            @MainActor in
+            isLoading = true
+            do {
+                let success = try await apiService.createTaskList(name: name, description: description)
+                if success {
+                    ToastManager.shared.show("List created successfully", type: .success)
+                    getUser() // Refresh data
+                } else {
+                    ToastManager.shared.show("Failed to create list", type: .error)
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+                ToastManager.shared.show("Failed to create list", type: .error)
+            }
+            isLoading = false
+        }
+    }
+    
+    func updateUser(firstName: String, lastName: String, phoneNumber: String?) {
+        Task {
+            @MainActor in
+            isLoading = true
+            do {
+                let success = try await apiService.updateUser(firstName: firstName, lastName: lastName, phoneNumber: phoneNumber)
+                if success {
+                    ToastManager.shared.show("Profile updated successfully", type: .success)
+                    getUser() // Refresh user data
+                } else {
+                    ToastManager.shared.show("Failed to update profile", type: .error)
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+                ToastManager.shared.show("Failed to update profile", type: .error)
+            }
+            isLoading = false
         }
     }
 }

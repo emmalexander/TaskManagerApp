@@ -83,7 +83,24 @@ struct ProfileView: View {
     
     private var menuSection: some View {
         VStack(spacing: 0) {
-            MenuRow(icon: "person.fill", title: "Personal Info", color: .blue)
+            Button(action: { viewModel.showingPersonalInfo = true }) {
+                MenuRow(icon: "person.fill", title: "Personal Info", color: .blue)
+            }
+            .buttonStyle(.plain)
+            .sheet(isPresented: $viewModel.showingPersonalInfo) {
+                PersonalInfoView()
+            }
+            
+            Divider().padding(.leading, 56)
+            
+            Button(action: { viewModel.showingManageLists = true }) {
+                MenuRow(icon: "list.bullet.rectangle.fill", title: "Manage Task Lists", color: .purple)
+            }
+            .buttonStyle(.plain)
+            .sheet(isPresented: $viewModel.showingManageLists) {
+                ManageTaskListsView()
+            }
+            
             Divider().padding(.leading, 56)
             MenuRow(icon: "bell.fill", title: "Notifications", color: .red)
             Divider().padding(.leading, 56)
@@ -96,7 +113,11 @@ struct ProfileView: View {
     }
     
     private var logoutButton: some View {
-        Button(action: { viewModel.logout() }) {
+        Button(action: {
+            viewModel.logout()
+            //Navigate to login
+            mainTabViewModel.selectedTab = 0
+        }) {
             HStack {
                 Image(systemName: "rectangle.portrait.and.arrow.right")
                 Text("Log Out")
