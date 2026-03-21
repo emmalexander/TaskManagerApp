@@ -10,6 +10,7 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var tokenManager = TokenManager.shared
     @StateObject private var mainTabViewModel = MainTabViewModel()
+    @StateObject private var profileTabViewModel = ProfileViewModel()
     @StateObject private var toastManager = ToastManager.shared
     
     @State private var appState: AppState = .splash
@@ -36,6 +37,7 @@ struct ContentView: View {
             }
         }
         .environmentObject(mainTabViewModel)
+        .environmentObject(profileTabViewModel)
         .environmentObject(toastManager)
         .id(resetID)
         .onChange(of: tokenManager.token) { newToken in

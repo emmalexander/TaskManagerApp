@@ -7,29 +7,32 @@ import SwiftUI
 
 struct ProfileView: View {
     @EnvironmentObject var mainTabViewModel: MainTabViewModel
-    @StateObject var viewModel = ProfileViewModel()
+    @EnvironmentObject var viewModel: ProfileViewModel
     
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 32) {
-                // Header
-                header
-                
-                // Profile Info
-                profileHeader
-                
-                // Statistics
-                statsSection
-                
-                // Menu Items
-                menuSection
-                
-                // Logout Button
-                logoutButton
+        NavigationStack {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 32) {
+                    // Header
+                    header
+                    
+                    // Profile Info
+                    profileHeader
+                    
+                    // Statistics
+                    statsSection
+                    
+                    // Menu Items
+                    menuSection
+                    
+                    // Logout Button
+                    logoutButton
+                }
+                .padding(.bottom, 100)
             }
-            .padding(.bottom, 100)
+            .background(Color(uiColor: .systemGroupedBackground))
+            .toolbar(.hidden, for: .navigationBar)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
     }
     
     private var header: some View {
@@ -37,13 +40,13 @@ struct ProfileView: View {
             Text("Profile")
                 .font(.largeTitle.weight(.bold))
             Spacer()
-            Button(action: {}) {
-                Image(systemName: "gearshape.fill")
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
-                    .padding(10)
-                    .background(Circle().fill(Color(uiColor: .secondarySystemBackground)))
-            }
+//            Button(action: {}) {
+//                Image(systemName: "gearshape.fill")
+//                    .font(.title3)
+//                    .foregroundStyle(.secondary)
+//                    .padding(10)
+//                    .background(Circle().fill(Color(uiColor: .secondarySystemBackground)))
+//            }
         }
         .padding(.horizontal, 20)
         .padding(.top, 20)
@@ -66,7 +69,7 @@ struct ProfileView: View {
                 Text("\(mainTabViewModel.user?.firstName ?? "Loading") \(mainTabViewModel.user?.lastName ?? "...")")
                     .font(.title2.weight(.bold))
                 
-                Text(mainTabViewModel.user?.email ?? "email@example.com")
+                Text(mainTabViewModel.user?.email ?? "")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -75,8 +78,8 @@ struct ProfileView: View {
     
     private var statsSection: some View {
         HStack(spacing: 20) {
-            StatCard(title: "Completed", value: "24", icon: "checkmark.circle.fill", color: Color(hex: 0x7B61FF))
-            StatCard(title: "Pending", value: "12", icon: "clock.fill", color: Color(hex: 0x5B8BFF))
+            StatCard(title: "Completed", value: "\(viewModel.completedTasksNumber)", icon: "checkmark.circle.fill", color: Color(hex: 0x7B61FF))
+            StatCard(title: "Pending", value: "\(viewModel.pendingTasksNumber)", icon: "clock.fill", color: Color(hex: 0x5B8BFF))
         }
         .padding(.horizontal, 20)
     }
@@ -93,13 +96,10 @@ struct ProfileView: View {
             
             Divider().padding(.leading, 56)
             
-            Button(action: { viewModel.showingManageLists = true }) {
+            NavigationLink(destination: ManageTaskListsView()) {
                 MenuRow(icon: "list.bullet.rectangle.fill", title: "Manage Task Lists", color: .purple)
             }
             .buttonStyle(.plain)
-            .sheet(isPresented: $viewModel.showingManageLists) {
-                ManageTaskListsView()
-            }
             
             Divider().padding(.leading, 56)
             MenuRow(icon: "bell.fill", title: "Notifications", color: .red)

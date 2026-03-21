@@ -63,6 +63,35 @@ class MainTabViewModel: ObservableObject {
         }
     }
     
+    func createTask(title: String, description: String?, dueDate: Date, taskListId: String, completion: ((Bool) -> Void)? = nil) {
+        Task {
+            @MainActor in
+            isLoading = true
+            do {
+                let dueDateInString: String = {
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd"
+                    return formatter.string(from: dueDate)
+                }()
+                
+                let success = try await apiService.createTask(taskListId: taskListId, title: title, description: description, dueDate: dueDateInString)
+                if success {
+                    ToastManager.shared.show("Task created successfully", type: .success)
+                    getUser()
+                    completion?(true)
+                } else {
+                    ToastManager.shared.show("Failed to create task", type: .error)
+                    completion?(false)
+                }
+            } catch {
+                self.errorMessage = error.localizedDescription
+                ToastManager.shared.show("Failed to create task", type: .error)
+                completion?(false)
+            }
+            isLoading = false
+        }
+    }
+    
     var filteredTasks: [TaskModel] {
         if selectedTaskListId == "starred" {
             return taskLists.flatMap { $0.tasks }.filter { $0.isStarred ?? false }

@@ -15,16 +15,39 @@ struct TaskTabView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading) {
-                    header
-                    greeting
-                    segmentControl
-                    projectCarousel
-                    tasksSection
+            ZStack(alignment: .bottomTrailing) {
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading) {
+                        header
+                        greeting
+                        segmentControl
+                        projectCarousel
+                        tasksSection
+                    }
                 }
-                .navigationBarHidden(true)
+                
+                // Floating Action Button
+                Button(action: {
+                    showingAddTask = true
+                }) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 60, height: 60)
+                        .background(
+                            Circle()
+                                .fill(LinearGradient(colors: [Color(hex: 0x7B61FF), Color(hex: 0x5B8BFF)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        )
+                        .shadow(color: Color(hex: 0x7B61FF).opacity(0.4), radius: 10, x: 0, y: 8)
+                }
+                .buttonStyle(.plain)
+                .padding(.trailing, 20)
+                .padding(.bottom, 100) // Clear the bottom tab bar
+                .sheet(isPresented: $showingAddTask) {
+                    NavigationStack { AddTaskView() }
+                }
             }
+            .navigationBarHidden(true)
         }
     }
 }
@@ -34,30 +57,12 @@ private extension TaskTabView {
     var header: some View {
         HStack {
             Text("Tasks")
-                .font(.title)
-                .foregroundStyle(.secondary)
+                .font(.title.weight(.bold))
+                .foregroundStyle(.primary)
             Spacer()
-            Button(action: {
-                showingAddTask = true
-            }) {
-                Image(systemName: "plus")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 64, height: 64)
-                    .background(
-                        Circle()
-                            .fill(LinearGradient(colors: [Color(hex: 0x7B61FF), Color(hex: 0x5B8BFF)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    )
-                    .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 8)
-            }
-            .buttonStyle(.plain)
-            .padding(.bottom, 20)
-            
-        }
-        .sheet(isPresented: $showingAddTask) {
-            NavigationStack { AddTaskView() }
         }
         .padding(.horizontal, 20)
+        .padding(.top, 10)
     }
 
     var greeting: some View {
@@ -206,6 +211,7 @@ private extension TaskTabView {
             }
         }
         .padding(.top, 8)
+        .padding(.bottom, 80)
     }
 
     @ViewBuilder

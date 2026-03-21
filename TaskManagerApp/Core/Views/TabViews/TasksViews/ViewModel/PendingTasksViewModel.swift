@@ -22,10 +22,10 @@ class PendingTasksViewModel: ObservableObject {
             do {
                 let response = try await apiService.getUserTasksByStatus(status: "pending", page: currentPage)
                 await MainActor.run {
-                    if response.data.isEmpty {
+                    if response.data.tasks.isEmpty {
                         canLoadMore = false
                     } else {
-                        self.tasks.append(contentsOf: response.data)
+                        self.tasks.append(contentsOf: response.data.tasks)
                         self.currentPage += 1
                     }
                     self.isLoading = false

@@ -15,47 +15,40 @@ struct ManageTaskListsView: View {
     @State private var listToDelete: TaskList?
     
     var body: some View {
-        NavigationStack {
-            List {
-                ForEach(mainTabViewModel.taskLists) { list in
-                    TaskListRow(list: list, onEdit: {
-                        selectedList = list
-                        showingEditSheet = true
-                    }, onDelete: {
-                        listToDelete = list
-                        showingDeleteAlert = true
-                    })
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
+        List {
+            ForEach(mainTabViewModel.taskLists) { list in
+                TaskListRow(list: list, onEdit: {
+                    selectedList = list
+                    showingEditSheet = true
+                }, onDelete: {
+                    listToDelete = list
+                    showingDeleteAlert = true
+                })
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+            }
+        }
+        .listStyle(.plain)
+        .background(Color(uiColor: .systemGroupedBackground))
+        .navigationTitle("Manage Lists")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
+        .padding(.bottom, 100)
+        .sheet(isPresented: $showingEditSheet) {
+            if let list = selectedList {
+                EditTaskListView(list: list) { updatedName, updatedDescription in
+                    mainTabViewModel.updateTaskList(listId: list.id, name: updatedName, description: updatedDescription)
                 }
             }
-            .listStyle(.plain)
-            .background(Color(uiColor: .systemGroupedBackground))
-            .navigationTitle("Manage Lists")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
+        }
+        .alert("Delete Task List", isPresented: $showingDeleteAlert, presenting: listToDelete) { list in
+            Button("Delete", role: .destructive) {
+                mainTabViewModel.deleteTaskList(listId: list.id)
             }
-            .sheet(isPresented: $showingEditSheet) {
-                if let list = selectedList {
-                    EditTaskListView(list: list) { updatedName, updatedDescription in
-                        mainTabViewModel.updateTaskList(listId: list.id, name: updatedName, description: updatedDescription)
-                    }
-                }
-            }
-            .alert("Delete Task List", isPresented: $showingDeleteAlert, presenting: listToDelete) { list in
-                Button("Delete", role: .destructive) {
-                    mainTabViewModel.deleteTaskList(listId: list.id)
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: { list in
-                Text("Are you sure you want to delete '\(list.name)'? This action cannot be undone.")
-            }
+            Button("Cancel", role: .cancel) {}
+        } message: { list in
+            Text("Are you sure you want to delete '\(list.name)'? This action cannot be undone.")
         }
     }
 }
