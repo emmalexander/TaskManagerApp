@@ -29,7 +29,7 @@ struct ContentView: View {
             case .splash:
                 SplashScreen(appState: $appState)
             case .onboarding:
-                OnboardingView(currentPage: 2)
+                OnboardingView()
             case .auth:
                 SignInView()
             case .main:

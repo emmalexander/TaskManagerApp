@@ -43,6 +43,8 @@ class APIService {
     private let removeTaskFromFavoriteUrl: String =  baseURL + "tasks/favorites/remove/"
     private let tasksUrl: String = baseURL + "tasks/"
     private let taskListsUrl: String = baseURL + "tasks/lists/"
+    private let verifyOTPUrl: String = baseURL + "auth/verify-email"
+    private let resendOTPUrl: String = baseURL + "auth/resend-verification"
     
 //    private let getPendingTasksUrl: String = baseURL + "tasks/pending"
 //    private let getInProgressTasksUrl: String = baseURL + "tasks/in-progress"
@@ -94,8 +96,8 @@ class APIService {
         if (200...299).contains(httpResponse.statusCode) {
             do {
                 let authResponse = try JSONDecoder().decode(AuthResponse.self, from: data)
-                // Save the token
-                TokenManager.shared.saveToken(authResponse.data.token)
+                // Save the tokens
+                TokenManager.shared.saveTokens(accessToken: authResponse.data.accessToken, refreshToken: authResponse.data.refreshToken)
                 return true
             } catch {
                 throw APIError.unableToDecode(error: error)
@@ -109,6 +111,108 @@ class APIService {
         }
     }
     
+    /// Verifies OTP for the user
+    func verifyOTP(email: String, otp: String) async throws -> Bool {
+        guard let url = URL(string: verifyOTPUrl) else {
+            throw APIError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            let body: [String: Any] = ["email": email, "otp": otp]
+            request.httpBody = try JSONSerialization.data(withJSONObject: body, options: [])
+        } catch {
+            throw APIError.requestFailed(description: "Failed to encode OTP data")
+        }
+        
+        return try await performRequest(request, requireAuth: false)
+    }
+    
+    /// Resends OTP to user's email
+    func resendOTP(email: String) async throws -> Bool {
+        guard let url = URL(string: resendOTPUrl) else {
+            throw APIError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            let body: [String: Any] = ["email": email]
+            request.httpBody = try JSONSerialization.data(withJSONObject: body, options: [])
+        } catch {
+            throw APIError.requestFailed(description: "Failed to encode OTP data")
+        }
+        
+        return try await performRequest(request, requireAuth: false)
+    }
+    
+    // MARK: - Authed Request Handling
+    private func executeRequest(_ request: URLRequest, requireAuth: Bool = true) async throws -> (Data, HTTPURLResponse) {
+        var finalRequest = request
+        
+        if requireAuth {
+            if let token = TokenManager.shared.token {
+                finalRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            } else {
+                throw APIError.requestFailed(description: "No access token available. Please sign in.")
+            }
+        }
+        
+        var (data, response) = try await URLSession.shared.data(for: finalRequest)
+        var httpResponse = response as? HTTPURLResponse
+        
+        if requireAuth, httpResponse?.statusCode == 401 {
+            do {
+                try await refreshTokens()
+                
+                if let newToken = TokenManager.shared.token {
+                    finalRequest.setValue("Bearer \(newToken)", forHTTPHeaderField: "Authorization")
+                    let retryResult = try await URLSession.shared.data(for: finalRequest)
+                    data = retryResult.0
+                    response = retryResult.1
+                    httpResponse = response as? HTTPURLResponse
+                }
+            } catch {
+                TokenManager.shared.clearTokenAndAlert()
+                throw error
+            }
+        }
+        
+        guard let validResponse = httpResponse else {
+            throw APIError.requestFailed(description: "Invalid response")
+        }
+        
+        return (data, validResponse)
+    }
+
+    private func refreshTokens() async throws {
+        guard let refreshToken = TokenManager.shared.refreshToken else {
+            throw APIError.requestFailed(description: "Session Expired. Please sign in again.")
+        }
+        struct RefreshRequest: Encodable { let refreshToken: String }
+        let urlStr = APIService.baseURL + "auth/refresh-token"
+        guard let url = URL(string: urlStr) else { throw APIError.invalidURL }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["refreshToken": refreshToken])
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        if let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) {
+            let authResponse = try JSONDecoder().decode(AuthResponse.self, from: data)
+            TokenManager.shared.saveTokens(accessToken: authResponse.data.accessToken, refreshToken: authResponse.data.refreshToken)
+        } else {
+            // Log the
+            throw APIError.requestFailed(description: "Invalid refresh token")
+        }
+    }
+    
     func getUser() async throws -> GetUserResponse {
         guard let url = URL(string: getUserUrl) else {
             throw APIError.invalidURL
@@ -118,18 +222,7 @@ class APIService {
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        if let token = TokenManager.shared.token {
-            if !TokenManager.shared.checkTokenValidity() {
-                throw APIError.requestFailed(description: "Session Expired. Please sign in again.")
-            }
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.requestFailed(description: "Invalid response")
-        }
+        let (data, httpResponse) = try await executeRequest(request, requireAuth: true)
         
         if (200...299).contains(httpResponse.statusCode) {
             do {
@@ -165,29 +258,11 @@ class APIService {
     
     /// Performs a generic request, optionally adding Auth header if token is available
     private func performRequest(_ request: URLRequest, requireAuth: Bool = true) async throws -> Bool {
-        var authRequest = request
-        
-        if requireAuth {
-            if let token = TokenManager.shared.token {
-                if !TokenManager.shared.checkTokenValidity() {
-                    throw APIError.requestFailed(description: "Session Expired. Please sign in again.")
-                }
-                authRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            }
-        }
-        
-        let (data, response) = try await URLSession.shared.data(for: authRequest)
-        
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.requestFailed(description: "Invalid response")
-        }
+        let (data, httpResponse) = try await executeRequest(request, requireAuth: requireAuth)
         
         if (200...299).contains(httpResponse.statusCode) {
              return true
         } else {
-            if httpResponse.statusCode == 401 {
-                 TokenManager.shared.clearTokenAndAlert()
-            }
             if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
                 let errorMessage = errorResponse.error ?? errorResponse.message ?? "Unknown error"
                 throw APIError.requestFailed(description: errorMessage)
@@ -212,18 +287,7 @@ class APIService {
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        if let token = TokenManager.shared.token {
-            if !TokenManager.shared.checkTokenValidity() {
-                throw APIError.requestFailed(description: "Session Expired. Please sign in again.")
-            }
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.requestFailed(description: "Invalid response")
-        }
+        let (data, httpResponse) = try await executeRequest(request, requireAuth: true)
         
         if (200...299).contains(httpResponse.statusCode) {
             do {
@@ -346,18 +410,7 @@ class APIService {
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        if let token = TokenManager.shared.token {
-            if !TokenManager.shared.checkTokenValidity() {
-                throw APIError.requestFailed(description: "Session Expired. Please sign in again.")
-            }
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.requestFailed(description: "Invalid response")
-        }
+        let (data, httpResponse) = try await executeRequest(request, requireAuth: true)
         
         if (200...299).contains(httpResponse.statusCode) {
             do {

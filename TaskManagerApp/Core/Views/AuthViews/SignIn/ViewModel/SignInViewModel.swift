@@ -9,6 +9,8 @@ class SignInViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String? = nil
     @Published var signInSuccess = false
+    @Published var showVerificationAlert = false
+    @Published var navigateToOTP = false
     
     private let apiService = APIService.shared
     
@@ -36,12 +38,15 @@ class SignInViewModel: ObservableObject {
                 let success = try await apiService.signIn(userData: userData)
                 if success {
                     signInSuccess = true
-                    print("DEBUG: Sign in successful")
+                    //print("DEBUG: Sign in successful")
                 }
             } catch {
-                // Since APIError conforms to LocalizedError, this will capture the specific API error message
-                errorMessage = error.localizedDescription
-                print("DEBUG: Sign in error: \(error.localizedDescription)")
+                if error.localizedDescription == "Email not verified. Please verify your email before signing in." {
+                    showVerificationAlert = true
+                } else {
+                    errorMessage = error.localizedDescription
+                }
+                //print("DEBUG: Sign in error: \(error.localizedDescription)")
             }
             
             isLoading = false

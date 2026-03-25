@@ -97,6 +97,16 @@ struct SignInView: View {
             MainTabView()
                 .navigationBarBackButtonHidden(true)
         }
+        .navigationDestination(isPresented: $viewModel.navigateToOTP) {
+            OTPView(email: viewModel.email)
+        }
+        .alert("Email Not Verified", isPresented: $viewModel.showVerificationAlert) {
+            Button("Verify", role: .cancel) {
+                viewModel.navigateToOTP = true
+            }
+        } message: {
+            Text("Please verify your email before signing in.")
+        }
         .alert("Error", isPresented: Binding(
             get: { viewModel.errorMessage != nil },
             set: { _ in viewModel.errorMessage = nil }

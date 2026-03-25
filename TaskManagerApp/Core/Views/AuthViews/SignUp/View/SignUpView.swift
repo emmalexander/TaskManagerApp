@@ -3,6 +3,7 @@ import SwiftUI
 struct SignUpView: View {
     @StateObject private var viewModel = SignUpViewModel()
     @State private var showSignIn = false
+    @State private var showOTPView = false
     @State private var isPasswordVisible = false
     @FocusState private var focusedField: Field?
     
@@ -107,15 +108,19 @@ struct SignUpView: View {
             }
             .padding(.top, 20)
             .padding(.horizontal)
+            .navigationBarHidden(true)
             .navigationDestination(isPresented: $showSignIn) {
                 SignInView()
             }
+            .navigationDestination(isPresented: $showOTPView) {
+                OTPView(email: viewModel.email)
+            }
             .alert("Success", isPresented: $viewModel.signUpSuccess) {
                 Button("OK") {
-                    showSignIn = true
+                    showOTPView = true
                 }
             } message: {
-                Text("Account created successfully!")
+                Text("Please verify your email.")
             }
             .alert("Error", isPresented: Binding(
                 get: { viewModel.errorMessage != nil },

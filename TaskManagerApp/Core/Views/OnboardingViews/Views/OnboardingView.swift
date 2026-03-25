@@ -6,8 +6,8 @@ struct OnboardingView: View {
     @State private var showSignIn = false
     @State private var showSignUp = false
     
-    init(currentPage: Int = 0){
-        _currentPage = .init(initialValue: currentPage)
+    init(currentPage: Int? = 0){
+        _currentPage = .init(initialValue: currentPage ?? 0)
     }
     
     let pages = [
@@ -32,88 +32,91 @@ struct OnboardingView: View {
     ]
     
     var body: some View {
-        ZStack {
-            // Background
-            Color(.systemBackground)
-                .ignoresSafeArea()
-            
-            VStack {
-                // Carousel
-                TabView(selection: $currentPage) {
-                    ForEach(0..<pages.count, id: \.self) { index in
-                        OnboardingCardView(page: pages[index])
-                            .tag(index)
-                    }
-                }
-                .tabViewStyle(.page(indexDisplayMode: .always))
-                .indexViewStyle(.page(backgroundDisplayMode: .always))
-                .animation(.easeInOut, value: currentPage)
+        NavigationStack {
+            ZStack {
+                // Background
+                Color(.systemBackground)
+                    .ignoresSafeArea()
                 
-                // Navigation Buttons
-                VStack(spacing: 16) {
-                    if currentPage == pages.count - 1 {
-                        // Final Step Options
-                        Button {
-                           showSignUp = true
-                        } label: {
-                            Text("Get Started")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.accentColor)
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
+                VStack {
+                    // Carousel
+                    TabView(selection: $currentPage) {
+                        ForEach(0..<pages.count, id: \.self) { index in
+                            OnboardingCardView(page: pages[index])
+                                .tag(index)
                         }
-                        .padding(.horizontal)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                        
-                        Button {
-                            showSignIn = true
-                        } label: {
-                            Text("I already have an account")
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(.bottom)
-                        
-                    } else {
-                        // Next Button
-                        Button {
-                            withAnimation {
-                                currentPage += 1
-                            }
-                        } label: {
-                            Text("Next")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.primary.opacity(0.1))
-                                .foregroundColor(.primary)
-                                .cornerRadius(12)
-                        }
-                        .padding(.horizontal)
-                        
-                        Button("Skip") {
-                            withAnimation {
-                                currentPage = pages.count - 1
-                            }
-                        }
-                        .foregroundStyle(.secondary)
                     }
+                    .tabViewStyle(.page(indexDisplayMode: .always))
+                    .indexViewStyle(.page(backgroundDisplayMode: .always))
+                    .animation(.easeInOut, value: currentPage)
+                    
+                    // Navigation Buttons
+                    VStack(spacing: 16) {
+                        if currentPage == pages.count - 1 {
+                            // Final Step Options
+                            Button {
+                                showSignUp = true
+                            } label: {
+                                Text("Get Started")
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.accentColor)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(12)
+                            }
+                            .padding(.horizontal)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                            
+                            Button {
+                                showSignIn = true
+                            } label: {
+                                Text("I already have an account")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.bottom)
+                            
+                        } else {
+                            // Next Button
+                            Button {
+                                withAnimation {
+                                    currentPage += 1
+                                }
+                            } label: {
+                                Text("Next")
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.primary.opacity(0.1))
+                                    .foregroundColor(.primary)
+                                    .cornerRadius(12)
+                            }
+                            .padding(.horizontal)
+                            
+                            Button("Skip") {
+                                withAnimation {
+                                    currentPage = pages.count - 1
+                                }
+                            }
+                            .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.bottom, 20)
+                    .frame(height: 150) // Fixed height for buttons area to prevent jumping
                 }
-                .padding(.bottom, 20)
-                .frame(height: 150) // Fixed height for buttons area to prevent jumping
+            }
+            .navigationDestination(isPresented: $showSignIn) {
+                SignInView()
+            }
+            .navigationDestination(isPresented: $showSignUp) {
+                SignUpView()
             }
         }
         .navigationTitle("")
         .navigationBarHidden(true)
-        .navigationDestination(isPresented: $showSignIn) {
-            SignInView()
-        }
-        .navigationDestination(isPresented: $showSignUp) {
-            SignUpView()
-        }
+
     }
 }
 
