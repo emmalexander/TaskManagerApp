@@ -6,19 +6,17 @@ struct AddTaskView: View {
     @EnvironmentObject var mainTabViewModel: MainTabViewModel
     
     @State private var taskName: String = ""
+    private let taskMaxLength: Int = 50
     @State private var dueDate: Date = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
-//    @State private var startTime: Date = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: Date()) ?? Date()
-//    @State private var endTime: Date = Calendar.current.date(bySettingHour: 10, minute: 0, second: 0, of: Date()) ?? Date()
+    
     @State private var descriptionText: String = ""
+    private let descriptionMaxLength: Int = 500
     @State private var selectedTaskListId: String = ""
     
     private var isFormValid: Bool {
         !taskName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         !selectedTaskListId.isEmpty
     }
-
-//    private let categories: [String] = ["Design", "Meeting", "Coding", "BDE", "Testing", "Quick call"]
-//    @State private var selectedCategory: String = "Design"
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -34,26 +32,38 @@ struct AddTaskView: View {
                             .padding(14)
                             .background(Color(uiColor: .secondarySystemGroupedBackground))
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .onChange(of: taskName) { newValue in
+                                                if newValue.count > taskMaxLength {
+                                                    taskName = String(newValue.prefix(taskMaxLength))
+                                                }
+                                            }
                         
                         fieldLabel("Description")
                         
                         ZStack(alignment: .topLeading) {
-                            if descriptionText.isEmpty {
-                                Text("Add description")
-                                    .foregroundColor(.gray.opacity(0.6))
-                                    .padding(18)
-                            }
                             TextEditor(text: $descriptionText)
                                 .scrollContentBackground(.hidden)
                                 .frame(minHeight: 110)
                                 .padding(10)
                                 .background(Color(uiColor: .secondarySystemGroupedBackground))
                                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .onChange(of: descriptionText) { newValue in
+                                    if newValue.count > descriptionMaxLength {
+                                        descriptionText = String(newValue.prefix(descriptionMaxLength))
+                                    }
+                                }
+                            
+                            if descriptionText.isEmpty {
+                                Text("Add description")
+                                    .foregroundColor(Color(.placeholderText))
+                                    .padding(18)
+                            }
+                            
                         }
 
                         fieldLabel("Due date")
                         
-                        DatePicker("", selection: $dueDate, displayedComponents: .date)
+                        DatePicker("", selection: $dueDate, in: Date()..., displayedComponents: .date)
                             .datePickerStyle(.compact)
                             .labelsHidden()
                             .padding(14)
@@ -92,6 +102,7 @@ struct AddTaskView: View {
                 }
                 .padding(.bottom, 16)
             }
+            .scrollDismissesKeyboard(.automatic)
         }
         .ignoresSafeArea()
         .navigationBarHidden(true)
@@ -122,7 +133,7 @@ struct AddTaskView: View {
     private var header: some View {
         ZStack {
             LinearGradient(
-                colors: [Color.purple.opacity(0.95), Color.blue.opacity(0.8)],
+                colors: [Color.blue.opacity(0.95), Color.black.opacity(0.8)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )

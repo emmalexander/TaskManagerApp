@@ -21,8 +21,10 @@ struct TaskTabView: View {
                         header
                         greeting
                         segmentControl
-                        projectCarousel
                         tasksSection
+                    }
+                    .refreshable {
+                        viewModel.getUser()
                     }
                 }
                 
@@ -160,13 +162,6 @@ private extension TaskTabView {
             )
         }
         .buttonStyle(.plain)
-    }
-}
-
-// MARK: - Project Carousel
-private extension TaskTabView {
-    var projectCarousel: some View {
-        EmptyView() // Temporarily hide or remove if it conflicts with the new task list focus
     }
 }
 

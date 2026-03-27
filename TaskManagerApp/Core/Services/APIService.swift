@@ -85,7 +85,7 @@ class APIService {
             throw APIError.requestFailed(description: "Failed to encode user data")
         }
         
-        print("➡️ [API Request] \(request.httpMethod ?? "UNKNOWN") \(request.url?.absoluteString ?? "No URL")")
+        //print("➡️ [API Request] \(request.httpMethod ?? "UNKNOWN") \(request.url?.absoluteString ?? "No URL")")
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
@@ -95,8 +95,8 @@ class APIService {
         
         if (200...299).contains(httpResponse.statusCode) {
             do {
-                let authResponse = try JSONDecoder().decode(AuthResponse.self, from: data)
-                // Save the tokens
+                let authResponse = try JSONDecoder().decode(SignInResponse.self, from: data)
+                
                 TokenManager.shared.saveTokens(accessToken: authResponse.data.accessToken, refreshToken: authResponse.data.refreshToken)
                 return true
             } catch {
@@ -223,6 +223,12 @@ class APIService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         let (data, httpResponse) = try await executeRequest(request, requireAuth: true)
+//
+//        if let dataString = String(data: data, encoding: .utf8) {
+//            await MainActor.run {
+//                print("Received data as String: \(dataString)")
+//            }
+//        }
         
         if (200...299).contains(httpResponse.statusCode) {
             do {

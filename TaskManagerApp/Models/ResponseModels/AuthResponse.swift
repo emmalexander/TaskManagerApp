@@ -13,7 +13,6 @@ struct AuthResponse: Decodable {
 }
 
 struct AuthData: Decodable {
-    let user: User
     let accessToken: String
     let refreshToken: String?
 }

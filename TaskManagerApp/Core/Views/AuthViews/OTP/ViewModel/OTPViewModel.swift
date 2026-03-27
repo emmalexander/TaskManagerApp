@@ -7,7 +7,10 @@ class OTPViewModel: ObservableObject {
     @Published var errorMessage: String? = nil
     @Published var isVerified = false
     @Published var isLoading = false
-    @Published var timeRemaining = 300 // 5 minutes representing 300 seconds
+    @Published var timeRemaining = 0
+    
+    @Published var invalidOTPTrigger: Bool = false
+    @Published var state: TypingState = .typing
     
     private var timer: Timer?
     let email: String
@@ -15,7 +18,7 @@ class OTPViewModel: ObservableObject {
     
     init(email: String) {
         self.email = email
-        startTimer()
+        //startTimer()
     }
     
     func startTimer() {
@@ -46,9 +49,12 @@ class OTPViewModel: ObservableObject {
             do {
                 let success = try await apiService.verifyOTP(email: email, otp: otp)
                 if success {
+                    ToastManager.shared.show("Email Verified successfully", type: .success)
                     isVerified = true
                 }
             } catch {
+                invalidOTPTrigger.toggle()
+                state = .invalid
                 errorMessage = error.localizedDescription
                 print("DEBUG: OTP Verification error: \(error.localizedDescription)")
             }
@@ -66,9 +72,12 @@ class OTPViewModel: ObservableObject {
             do {
                 let success = try await apiService.resendOTP(email: email)
                 if success {
+                    ToastManager.shared.show("A new code has been sent successfully", type: .success)
                     startTimer()
                 }
             } catch {
+                invalidOTPTrigger.toggle()
+                state = .invalid
                 errorMessage = error.localizedDescription
                 print("DEBUG: Resend OTP error: \(error.localizedDescription)")
             }

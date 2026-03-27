@@ -31,20 +31,41 @@ struct OTPView: View {
                     
                     // Form Card
                     VStack(spacing: 20) {
-                        
-                        TextField("000000", text: $viewModel.otp)
-                            .keyboardType(.numberPad)
-                            .textContentType(.oneTimeCode)
-                            .multilineTextAlignment(.center)
-                            .font(.system(size: 32, weight: .bold, design: .monospaced))
-                            .onChange(of: viewModel.otp) { newValue in
-                                if newValue.count > 6 {
-                                    viewModel.otp = String(newValue.prefix(6))
-                                }
+                        VerificationTextField(viewModel: viewModel, value: $viewModel.otp) { changedValue in
+                            if changedValue.count < 6 {
+                                return .typing
                             }
-                            .padding()
-                            .background(Color.white)
-                            .cornerRadius(12)
+                            
+//                            else if changedValue == "123456" {
+//                                return .valid
+                        //    }
+                        else {
+                                return .typing
+                            }
+                        }
+                        
+                        if viewModel.errorMessage != nil {
+                            Text(viewModel.errorMessage ?? "")
+                                .multilineTextAlignment(.center)
+                                .foregroundColor(.red)
+                                .padding(.horizontal)
+                                .padding(.vertical, 12)
+                        }
+                        
+                        
+//                        TextField("000000", text: $viewModel.otp)
+//                            .keyboardType(.numberPad)
+//                            .textContentType(.oneTimeCode)
+//                            .multilineTextAlignment(.center)
+//                            .font(.system(size: 32, weight: .bold, design: .monospaced))
+//                            .onChange(of: viewModel.otp) { newValue in
+//                                if newValue.count > 6 {
+//                                    viewModel.otp = String(newValue.prefix(6))
+//                                }
+//                            }
+//                            .padding()
+//                            .background(Color.white)
+//                            .cornerRadius(12)
                         
                         LoadingButton(
                             title: "Verify",
@@ -53,6 +74,9 @@ struct OTPView: View {
                         ) {
                             viewModel.verifyOTP()
                         }
+                        .disabled(viewModel.otp.isEmpty || viewModel.isLoading)
+                        .opacity(viewModel.otp.isEmpty || viewModel.isLoading ? 0.5 : 1)
+                        .padding(.top, 12)
                         
                         Button {
                             viewModel.resendCode()

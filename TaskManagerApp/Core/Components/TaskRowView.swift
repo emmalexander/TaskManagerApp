@@ -1,7 +1,6 @@
 import SwiftUI
 
-// MARK: - Constants
-private let kDeleteButtonWidth: CGFloat = 72
+private let kDeleteButtonWidth: CGFloat = 100
 private let kSwipeThreshold: CGFloat = kDeleteButtonWidth * 0.6
 private let kMaxSwipe: CGFloat = kDeleteButtonWidth
 
@@ -14,6 +13,7 @@ struct TaskRowView: View {
 
     // Swipe state
     @State private var swipeOffset: CGFloat = 0
+    @State private var isSwiped: Bool = false
     @State private var isDragging = false
 
     // Alert state
@@ -47,24 +47,26 @@ struct TaskRowView: View {
 
     var body: some View {
         ZStack(alignment: .trailing) {
-            // MARK: Delete button (revealed behind the card)
+
             deleteBackdrop
 
-            // MARK: The main card
             cardContent
+                .padding(.horizontal, 16)
+                .contentShape(Rectangle())
                 .offset(x: swipeOffset)
-                .gesture(swipeGesture)
+                //.gesture(swipeGesture)
+                .gesture(DragGesture().onChanged(onChange(value:)).onEnded(onEnd(value:)))
         }
-        .clipped()
+        //.clipped()
         // Delete confirmation dialog
         .alert("Delete Task?", isPresented: $showingDeleteAlert) {
             Button("Delete", role: .destructive) {
                 // Snap card back first, then call delete (which fires the API + toast)
-                snapBack()
+                //snapBack()
                 onDelete()
             }
             Button("Cancel", role: .cancel) {
-                snapBack()
+                //snapBack()
             }
         } message: {
             Text("Are you sure you want to delete \"\(task.title)\"? This action cannot be undone.")
@@ -77,8 +79,43 @@ struct TaskRowView: View {
             Text("Are you sure you want to mark \"\(task.title)\" as completed? This action cannot be undone.")
         }
     }
+    
+    func onChange(value: DragGesture.Value) {
+        if value.translation.width < 0 {
+            if isSwiped {
+                swipeOffset = value.translation.width - 90
+            } else {
+                swipeOffset = value.translation.width
+            }
+        }
+    }
+    
+    func onEnd(value: DragGesture.Value) {
+        withAnimation(.easeOut) {
+            if value.translation.width < 0 {
+                if -value.translation.width > 10 {
+                    isSwiped = true
+                    swipeOffset = -90
+                } else if -value.translation.width < UIScreen.main.bounds.width / 2 {
+                    swipeOffset = 0
+                    //showingDeleteAlert = true
+                }  else if -swipeOffset > 10 {
+                    isSwiped = true
+                    swipeOffset = -90
+                } else {
+                    isSwiped = false
+                    swipeOffset = 0
+                }
+            } else {
+                isSwiped = false
+                swipeOffset = 0
+            }
+        }
+    }
+    
+    func removeCard() {}
+    
 
-    // MARK: - Delete Backdrop
     private var deleteBackdrop: some View {
         HStack {
             Spacer()
@@ -103,12 +140,12 @@ struct TaskRowView: View {
             }
             .buttonStyle(.plain)
             // Only show/expand as user swipes
-            .opacity(revealProgress)
-            .scaleEffect(x: revealProgress, anchor: .trailing)
+            //.opacity(revealProgress)
+            //.scaleEffect(x: revealProgress, anchor: .trailing)
         }
+        .padding(.horizontal, 16)
     }
 
-    // MARK: - Card Content
     private var cardContent: some View {
         HStack(alignment: .center, spacing: 12) {
             // Status icon bubble
@@ -177,47 +214,59 @@ struct TaskRowView: View {
         .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
     }
 
-    // MARK: - Swipe Gesture (left only → delete)
-    private var swipeGesture: some Gesture {
-        DragGesture(minimumDistance: 10, coordinateSpace: .local)
-            .onChanged { value in
-                guard value.translation.width < 0 else { return } // left only
-                isDragging = true
-                let raw = value.translation.width
-                // Add rubber-band resistance beyond max
-                if abs(raw) <= kMaxSwipe {
-                    swipeOffset = raw
-                } else {
-                    let excess = abs(raw) - kMaxSwipe
-                    swipeOffset = -(kMaxSwipe + excess * 0.2)
-                }
-            }
-            .onEnded { value in
-                isDragging = false
-                let velocity = value.predictedEndTranslation.width
-                // If dragged past threshold OR flung with enough velocity → snap open
-                if swipeOffset < -kSwipeThreshold || velocity < -200 {
-                    snapOpen()
-                } else {
-                    snapBack()
-                }
-            }
+//    private var swipeGesture: some Gesture {
+//        DragGesture(minimumDistance: 10, coordinateSpace: .local)
+//            .onChanged { value in
+//                guard value.translation.width < 0 else { return } // left only
+//                isDragging = true
+//                let raw = value.translation.width
+//                // Add rubber-band resistance beyond max
+//                if abs(raw) <= kMaxSwipe {
+//                    swipeOffset = raw
+//                } else {
+//                    let excess = abs(raw) - kMaxSwipe
+//                    swipeOffset = -(kMaxSwipe + excess * 0.2)
+//                }
+//            }
+//            .onEnded { value in
+//                isDragging = false
+//                let velocity = value.predictedEndTranslation.width
+//                // If dragged past threshold OR flung with enough velocity → snap open
+//                if swipeOffset < -kSwipeThreshold || velocity < -200 {
+//                    snapOpen()
+//                } else {
+//                    snapBack()
+//                }
+//            }
+//    }
+
+//    private var revealProgress: CGFloat {
+//        min(abs(swipeOffset) / kMaxSwipe, 1.0)
+//    }
+//
+//    private func snapOpen() {
+//        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+//            swipeOffset = -kMaxSwipe
+//        }
+//    }
+//
+//    private func snapBack() {
+//        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+//            swipeOffset = 0
+//        }
+//    }
+}
+
+#Preview {
+    TaskRowView(task: TaskModel(id: "", title: "Title", status: "pending", dueDate: Date(), userId: "1", taskListId: "11", createdAt: Date(), updatedAt: Date())) {
+        //
+    } onComplete: {
+        //
+    } onToggleFavorite: {
+        //
+    } onEdit: {
+        //
     }
 
-    // MARK: - Helpers
-    private var revealProgress: CGFloat {
-        min(abs(swipeOffset) / kMaxSwipe, 1.0)
-    }
-
-    private func snapOpen() {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-            swipeOffset = -kMaxSwipe
-        }
-    }
-
-    private func snapBack() {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-            swipeOffset = 0
-        }
-    }
+    
 }
