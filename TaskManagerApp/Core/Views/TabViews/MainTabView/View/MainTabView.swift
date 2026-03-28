@@ -18,7 +18,7 @@ struct MainTabView: View {
             case 1:
                 TaskCalendarView()
             case 2:
-                NotificationView()
+                SearchTaskView()
             case 3:
                 ProfileView()
             default:
@@ -30,6 +30,7 @@ struct MainTabView: View {
             BottomTabBar()
         }
         .background(Color(uiColor: .systemGroupedBackground))
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .onAppear{
             viewModel.getUser()
             //viewModel.getUserTasksInProgress()

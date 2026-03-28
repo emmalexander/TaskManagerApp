@@ -14,7 +14,7 @@ struct BottomTabBar: View {
         HStack(spacing: 40) {
             bottomItem(system: "house.fill", index: 0)
             bottomItem(system: "calendar", index: 1)
-            bottomItem(system: "bell.badge", index: 2)
+            bottomItem(system: "magnifyingglass", index: 2)
             bottomItem(system: "person.fill", index: 3)
         }
         .padding(.horizontal, 30)
@@ -26,6 +26,7 @@ struct BottomTabBar: View {
         )
         //.padding(.horizontal, 24)
         .padding(.bottom, 12)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
     
     func bottomItem(system: String, index: Int) -> some View {

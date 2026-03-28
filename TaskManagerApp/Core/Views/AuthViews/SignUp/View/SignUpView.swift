@@ -43,7 +43,7 @@ struct SignUpView: View {
                             .focused($focusedField, equals: .phoneNumber)
                             .submitLabel(.next)
                             .onSubmit { focusedField = .email }
-                            .onChange(of: viewModel.phoneNumber) { newValue in
+                            .onChange(of: viewModel.phoneNumber) { oldValue, newValue in
                                 if newValue.count > 11 {
                                     viewModel.phoneNumber = String(newValue.prefix(11))
                                 }

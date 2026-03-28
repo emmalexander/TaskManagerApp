@@ -45,6 +45,7 @@ class APIService {
     private let taskListsUrl: String = baseURL + "tasks/lists/"
     private let verifyOTPUrl: String = baseURL + "auth/verify-email"
     private let resendOTPUrl: String = baseURL + "auth/resend-verification"
+    private let searchTasksUrl: String = baseURL + "tasks/search"
     
 //    private let getPendingTasksUrl: String = baseURL + "tasks/pending"
 //    private let getInProgressTasksUrl: String = baseURL + "tasks/in-progress"
@@ -407,16 +408,63 @@ class APIService {
         return try await performRequest(request)
     }
     
-    func getPendingTasks() async throws -> GetUserResponse {
-        guard let url = URL(string: getUserUrl) else {
+//    func getPendingTasks() async throws -> GetUserResponse {
+//        guard let url = URL(string: getUserUrl) else {
+//            throw APIError.invalidURL
+//        }
+//        
+//        var request = URLRequest(url: url)
+//        request.httpMethod = "GET"
+//        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+//        
+//        let (data, httpResponse) = try await executeRequest(request, requireAuth: true)
+//        
+//        if (200...299).contains(httpResponse.statusCode) {
+//            do {
+//                let response = try JSONDecoder.apiDecoder.decode(GetUserResponse.self, from: data)
+//                return response
+//            } catch {
+//                throw APIError.unableToDecode(error: error)
+//            }
+//        } else {
+//            if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
+//                let errorMessage = errorResponse.error ?? errorResponse.message ?? "Unknown error"
+//                throw APIError.requestFailed(description: errorMessage)
+//            }
+//            throw APIError.requestFailed(description: "Server returned \(httpResponse.statusCode)")
+//        }
+//    }
+    
+    func searchTask(query: String, page: Int = 1, limit: Int = 10) async throws -> GetUserResponse {
+        guard var urlComponents = URLComponents(string: "\(searchTasksUrl)") else {
             throw APIError.invalidURL
         }
+        
+        urlComponents.queryItems = [
+            URLQueryItem(name: "name", value: "\(query.lowercased())"),
+            //URLQueryItem(name: "description", value: "\(query)"),
+            URLQueryItem(name: "page", value: "\(page)"),
+            URLQueryItem(name: "limit", value: "\(limit)")
+        ]
+        
+//        guard let url = URL(string: searchTasksUrl) else {
+//            throw APIError.invalidURL
+//        }
+        
+        guard let url = urlComponents.url else { throw APIError.invalidURL }
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         let (data, httpResponse) = try await executeRequest(request, requireAuth: true)
+        
+        
+        if let dataString = String(data: data, encoding: .utf8) {
+            await MainActor.run {
+                print("Received data as String: \(dataString)")
+            }
+        }
         
         if (200...299).contains(httpResponse.statusCode) {
             do {

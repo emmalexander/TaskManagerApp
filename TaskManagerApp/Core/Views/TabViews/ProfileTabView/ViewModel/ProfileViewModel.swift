@@ -15,6 +15,8 @@ class ProfileViewModel: ObservableObject {
     @Published var completedTasksNumber: Int = 0
     @Published var pendingTasksNumber: Int = 0
     
+    @Published var logUserOut: Bool = false
+    
     private let apiService = APIService.shared
     
     init() {
@@ -52,6 +54,7 @@ class ProfileViewModel: ObservableObject {
     }
     
     func logout() {
-        //TokenManager.shared.clearTokenAndAlert()
+        TokenManager.shared.clearTokenAndAlert()
+        logUserOut = true
     }
 }

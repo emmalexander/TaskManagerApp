@@ -32,6 +32,9 @@ struct ProfileView: View {
             }
             .background(Color(uiColor: .systemGroupedBackground))
             .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(isPresented: $viewModel.logUserOut){
+                SignInView()
+            }
         }
     }
     

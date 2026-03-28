@@ -19,7 +19,13 @@ struct TaskManagerAppApp: App {
 
 extension UIApplication {
     func addTapGestureRecognizer() {
-        guard let window = windows.first else { return }
+        // Find an active UIWindowScene and its key window (or first window as a fallback)
+        let windowScene = self.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first { $0.activationState == .foregroundActive }
+
+        guard let window = windowScene?.windows.first(where: { $0.isKeyWindow }) ?? windowScene?.windows.first else { return }
+
         let tapGesture = UITapGestureRecognizer(target: window, action: #selector(UIView.endEditing))
         tapGesture.requiresExclusiveTouchType = false
         tapGesture.cancelsTouchesInView = false

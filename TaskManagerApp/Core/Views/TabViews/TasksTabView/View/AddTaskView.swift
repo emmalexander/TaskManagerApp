@@ -32,7 +32,7 @@ struct AddTaskView: View {
                             .padding(14)
                             .background(Color(uiColor: .secondarySystemGroupedBackground))
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .onChange(of: taskName) { newValue in
+                            .onChange(of: taskName) { oldValue, newValue in
                                                 if newValue.count > taskMaxLength {
                                                     taskName = String(newValue.prefix(taskMaxLength))
                                                 }
@@ -47,7 +47,7 @@ struct AddTaskView: View {
                                 .padding(10)
                                 .background(Color(uiColor: .secondarySystemGroupedBackground))
                                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                .onChange(of: descriptionText) { newValue in
+                                .onChange(of: descriptionText) { oldValue, newValue in
                                     if newValue.count > descriptionMaxLength {
                                         descriptionText = String(newValue.prefix(descriptionMaxLength))
                                     }

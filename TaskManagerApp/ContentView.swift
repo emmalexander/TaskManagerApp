@@ -10,6 +10,7 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var tokenManager = TokenManager.shared
     @StateObject private var mainTabViewModel = MainTabViewModel()
+    @StateObject private var searchTabViewModel = SearchViewModel()
     @StateObject private var profileTabViewModel = ProfileViewModel()
     @StateObject private var toastManager = ToastManager.shared
     
@@ -37,10 +38,11 @@ struct ContentView: View {
             }
         }
         .environmentObject(mainTabViewModel)
+        .environmentObject(searchTabViewModel)
         .environmentObject(profileTabViewModel)
         .environmentObject(toastManager)
         .id(resetID)
-        .onChange(of: tokenManager.token) { newToken in
+        .onChange(of: tokenManager.token) { oldToken, newToken in
             if newToken != nil && appState == .auth {
                 withAnimation { appState = .main }
             } else if newToken == nil && appState == .main {
